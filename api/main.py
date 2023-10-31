@@ -1,23 +1,39 @@
-from fastapi import FastAPI
+import json
 
-from . import schemas
+from flask import Flask, request
 
-
-app = FastAPI()
-
-
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
+app = Flask(__name__)
 
 
-@app.get("/logs")
-async def get_logs():
+@app.route("/logs")
+def get_logs():
+    some_filter = request.args.get('filter')
+    if some_filter:
+        print(f"filtering with {some_filter}")
     return {"logs": "..."}
 
 
-@app.get("/config")
-async def get_configurable_parameters():
+@app.route("/model")
+def get_model():
+    return {"model": "..."}
+
+
+@app.route("/config", methods=['GET', 'PUT'])
+def config():
+    if request.method == 'PUT':
+        print(request.data)
+        return {}
+    else:
+        return {
+            "mode": "train",
+            "algorithm": "DQN",
+            "num_layers": 4,
+            "lr": 1e-3
+            }
+
+
+@app.route("/config-params")
+def get_configurable_parameters():
     return {
         "train": {
             "Random anlgorithm": {},
@@ -33,24 +49,15 @@ async def get_configurable_parameters():
                 "lr": "float"
             }
         }
-        }
-
-
-@app.get("/current_config")
-async def get_current_config():
-    return {
-        "mode": "train",
-        "algorithm": "DQN",
-        "num_layers": 4,
-        "lr": 1e-3
-        }
-
-
-@app.put("/current_config")
-async def update_config(config_id: int, config: schemas.ConfigUpdate):
-    pass
-
-
-@app.put("/start")
-async def start_process(process_id: int, process: schemas.Process):
-    pass
+    }
+ 
+    
+@app.route("/action", methods=['PUT'])
+def action():
+    data = json.loads(request.data)
+    state = data["state"]
+    moves = data["moves"]
+    reward = data["reward"]
+    
+    chosen_action = [1, 0, 0]
+    return {"action": chosen_action}

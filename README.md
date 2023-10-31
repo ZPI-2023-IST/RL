@@ -7,4 +7,4 @@ Repository for Reinforcement Learning framework.
 
 ## Run
 
-    uvicorn api.main:app
+    flask --app api.main run
