@@ -1,9 +1,9 @@
-import numpy as np
 import torch
 
 from rl.algorithms import Algorithm, algorithm_manager
 from rl.algorithms import ParameterType
 from rl.algorithms.modules.SimpleNet import SimpleNet
+
 
 class Trainer:
     pass
@@ -32,8 +32,7 @@ class DQN(LearningAlgorithm):
     @classmethod
     def _get_train_params(cls) -> dict:
         return {"lr": (ParameterType.FLOAT.name, 0.0)}
-    
+
     @classmethod
     def _get_test_params(cls) -> dict:
         return {}
-    

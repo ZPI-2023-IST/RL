@@ -23,7 +23,7 @@ class Logger:
         message = f"[{log_level.name}][{log_type.name}] {message}"
         self._messages.append((log_level, log_type, message))
         print(message)
-        
+
     def info(self, message: str, log_type: LogType) -> None:
         self.log(message, LogLevel.INFO, log_type)
 

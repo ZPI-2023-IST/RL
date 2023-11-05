@@ -5,6 +5,7 @@ from flask import request
 from rl.api import logger, app, algorithm_manager
 from logger.Logger import LogType
 
+
 @app.route("/logs")
 def get_logs():
     """
@@ -39,7 +40,7 @@ def config():
         algorithm_name = data.pop("algorithm")
         algorithm_manager.set_algorithm(algorithm_name)
         algorithm_manager.configure_algorithm(data)
-        
+
         logger.info(
             f"Configured algorithm {algorithm_name}",
             LogType.CONFIG,
@@ -48,7 +49,7 @@ def config():
             f"New config: {algorithm_manager.algorithm.config.as_dict()}",
             LogType.CONFIG,
         )
-        
+
         return json.dumps(algorithm_manager.algorithm.config.as_dict())
     else:
         data = algorithm_manager.algorithm.config.as_dict()
@@ -67,6 +68,7 @@ def get_configurable_parameters():
     for algorithm_name, algorithm in algorithm_manager.registered_algorithms.items():
         params[algorithm_name] = algorithm.get_configurable_parameters()
     return params
+
 
 @app.route("/action", methods=["PUT"])
 def action():
