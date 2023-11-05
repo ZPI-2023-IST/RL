@@ -2,10 +2,12 @@ import json
 
 from flask import Flask, request
 
-from rl.logger.Logger import Logger
+from rl.logger.Logger import Logger, LogLevel, LogType
 
 app = Flask(__name__)
 logger = Logger()
+logger.log("RL module started", LogLevel.INFO, LogType.CONFIG)
+
 
 @app.route("/logs")
 def get_logs():
@@ -13,10 +15,11 @@ def get_logs():
     Endpoint return logs, registered in RL module. It will be possible
     to filter thelogs with query params.
     """
+    logs = logger.get_messages()
     some_filter = request.args.get('filter')
     if some_filter:
         print(f"filtering with {some_filter}")
-    return {"logs": "..."}
+    return {"logs": logs}
 
 
 @app.route("/model")
