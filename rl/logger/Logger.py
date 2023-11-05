@@ -19,9 +19,9 @@ class Logger:
     def __init__(self) -> None:
         self._messages = []
 
-    def log(self, message: str, level: LogLevel, log_type: LogType) -> None:
-        message = f"[{level.name}][{log_type.name}] {message}"
-        self._messages.append((level, log_type, message))
+    def log(self, message: str, log_level: LogLevel, log_type: LogType) -> None:
+        message = f"[{log_level.name}][{log_type.name}] {message}"
+        self._messages.append((log_level, log_type, message))
         print(message)
 
     def get_messages(self, filter: str = None) -> list:
