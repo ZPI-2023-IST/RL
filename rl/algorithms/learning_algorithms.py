@@ -1,6 +1,7 @@
 import numpy as np
 
 from rl.algorithms import Algorithm, algorithm_manager
+from rl.algorithms import ParameterType
 
 
 class Trainer:
@@ -21,6 +22,14 @@ class DQN(LearningAlgorithm):
     def make_action(self, state: list, actions: list[list]) -> list:
         return [1, 2, 3]
 
-    @staticmethod
-    def get_configurable_parameters() -> dict:
-        return {"train": {"lr": "float"}, "test": {}}
+    def get_reward(self, reward: float) -> float:
+        return reward
+
+    @classmethod
+    def _get_train_params(cls) -> dict:
+        return {"lr": (ParameterType.FLOAT.name, 0.0)}
+    
+    @classmethod
+    def _get_test_params(cls) -> dict:
+        return {}
+    

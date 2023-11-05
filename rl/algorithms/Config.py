@@ -1,3 +1,5 @@
+from enum import Enum
+
 class Config:
     def __init__(self) -> None:
         pass
@@ -11,3 +13,11 @@ class Config:
 
     def as_dict(self) -> dict:
         return self.__dict__
+
+
+class ParameterType(Enum):
+    INT = 0
+    FLOAT = 1
+    BOOL = 2
+    STRING = 3
+    

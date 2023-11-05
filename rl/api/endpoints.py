@@ -63,11 +63,10 @@ def get_configurable_parameters():
     Paramters are going to depend on mode (train/test) and
     algoritm.
     """
-    return {
-        "train": {"Random anlgorithm": {}, "DQN": {"num_layers": "int", "lr": "float"}},
-        "test": {"Random anlgorithm": {}, "DQN": {"num_layers": "int", "lr": "float"}},
-    }
-
+    params = {}
+    for algorithm_name, algorithm in algorithm_manager.registered_algorithms.items():
+        params[algorithm_name] = algorithm.get_configurable_parameters()
+    return params
 
 @app.route("/action", methods=["PUT"])
 def action():
