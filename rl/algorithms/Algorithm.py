@@ -10,11 +10,11 @@ class Algorithm(ABC):
         self.config = None
 
     @abstractmethod
-    def make_action(self, state: np.ndarray, actions: list[np.ndarray]) -> np.ndarray:
+    def make_action(self, state: list, actions: list[list]) -> list:
         raise NotImplementedError
 
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def get_configurable_parameters() -> dict:
         raise NotImplementedError
 

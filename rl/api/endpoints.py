@@ -2,8 +2,7 @@ import json
 
 from flask import request
 
-from rl.api import logger, app
-from rl.algorithms.Algorithm import Algorithm
+from rl.api import logger, app, algorithm_manager
 
 @app.route("/logs")
 def get_logs():
@@ -35,7 +34,9 @@ def config():
         key2 - bla bla
     """
     if request.method == 'PUT':
-        print(request.data)
+        data = json.loads(request.data)
+        algorithm_name = data["algorithm"]
+        algorithm_manager.set_algorithm(algorithm_name)
         return {}
     else:
         return {
@@ -87,5 +88,5 @@ def action():
     moves = data["moves"]
     reward = data["reward"]
     
-    chosen_action = [1, 0, 0]
+    chosen_action = algorithm_manager.algorithm.make_action(state, moves)
     return {"action": chosen_action}
