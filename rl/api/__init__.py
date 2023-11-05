@@ -6,3 +6,4 @@ from rl.algorithms import algorithm_manager
 app = Flask(__name__)
 logger = Logger()
 algorithm_manager.mount(logger)
+algorithm_manager.configure_algorithm({})

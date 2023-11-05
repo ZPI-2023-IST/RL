@@ -2,6 +2,7 @@ import numpy as np
 
 from rl.algorithms import Algorithm, algorithm_manager
 
+
 @algorithm_manager.registered_algorithm("random")
 class RandomAlgorithm(Algorithm):
     def __init__(self, logger) -> None:

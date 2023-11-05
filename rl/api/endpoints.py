@@ -3,6 +3,7 @@ import json
 from flask import request
 
 from rl.api import logger, app, algorithm_manager
+from logger.Logger import LogType
 
 @app.route("/logs")
 def get_logs():
@@ -11,7 +12,7 @@ def get_logs():
     to filter thelogs with query params.
     """
     logs = logger.get_messages()
-    some_filter = request.args.get('filter')
+    some_filter = request.args.get("filter")
     if some_filter:
         print(f"filtering with {some_filter}")
     return {"logs": logs}
@@ -25,7 +26,7 @@ def get_model():
     return {"model": "..."}
 
 
-@app.route("/config", methods=['GET', 'PUT'])
+@app.route("/config", methods=["GET", "PUT"])
 def config():
     """
     Endpoint allows for GETtin curent configuration and PUTting
@@ -33,18 +34,26 @@ def config():
         key1 - bla bla
         key2 - bla bla
     """
-    if request.method == 'PUT':
+    if request.method == "PUT":
         data = json.loads(request.data)
-        algorithm_name = data["algorithm"]
+        algorithm_name = data.pop("algorithm")
         algorithm_manager.set_algorithm(algorithm_name)
-        return {}
+        algorithm_manager.configure_algorithm(data)
+        
+        logger.info(
+            f"Configured algorithm {algorithm_name}",
+            LogType.CONFIG,
+        )
+        logger.info(
+            f"New config: {algorithm_manager.algorithm.config.as_dict()}",
+            LogType.CONFIG,
+        )
+        
+        return json.dumps(algorithm_manager.algorithm.config.as_dict())
     else:
-        return {
-            "mode": "train",
-            "algorithm": "DQN",
-            "num_layers": 4,
-            "lr": 1e-3
-            }
+        data = algorithm_manager.algorithm.config.as_dict()
+        data["algorithm"] = algorithm_manager.algorithm_name
+        return json.dumps(data)
 
 
 @app.route("/config-params")
@@ -55,24 +64,12 @@ def get_configurable_parameters():
     algoritm.
     """
     return {
-        "train": {
-            "Random anlgorithm": {},
-            "DQN": {
-                "num_layers": "int",
-                "lr": "float"
-            }
-        },
-        "test": {
-            "Random anlgorithm": {},
-            "DQN": {
-                "num_layers": "int",
-                "lr": "float"
-            }
-        }
+        "train": {"Random anlgorithm": {}, "DQN": {"num_layers": "int", "lr": "float"}},
+        "test": {"Random anlgorithm": {}, "DQN": {"num_layers": "int", "lr": "float"}},
     }
- 
-    
-@app.route("/action", methods=['PUT'])
+
+
+@app.route("/action", methods=["PUT"])
 def action():
     """
     Endpoint allows for getting an action from model, based
@@ -87,6 +84,6 @@ def action():
     state = data["state"]
     moves = data["moves"]
     reward = data["reward"]
-    
+
     chosen_action = algorithm_manager.algorithm.make_action(state, moves)
     return {"action": chosen_action}
