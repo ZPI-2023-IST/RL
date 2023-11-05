@@ -11,6 +11,10 @@ class Algorithm(ABC):
     
     @abstractmethod
     def get_reward(self, reward: float) -> float:
+        """
+        This method is called when the agent receives a reward. 
+        It should store the reward for future training.
+        """
         raise NotImplementedError
 
     @abstractmethod
@@ -20,11 +24,23 @@ class Algorithm(ABC):
     @classmethod
     @abstractmethod
     def _get_train_params(cls) -> dict:
+        """
+        Trian params should be returned as a dict of tuples, 
+        where the first element is the type of the parameter and
+        the second element is the default value.
+        Key is the name of the parameter.
+        """
         raise NotImplementedError
     
     @classmethod
     @abstractmethod
     def _get_test_params(cls) -> dict:
+        """
+        Test params should be returned as a dict of tuples, 
+        where the first element is the type of the parameter and
+        the second element is the default value.
+        Key is the name of the parameter.
+        """
         raise NotImplementedError
 
     @classmethod

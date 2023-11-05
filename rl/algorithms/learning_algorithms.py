@@ -1,8 +1,9 @@
 import numpy as np
+import torch
 
 from rl.algorithms import Algorithm, algorithm_manager
 from rl.algorithms import ParameterType
-
+from rl.algorithms.modules.SimpleNet import SimpleNet
 
 class Trainer:
     pass
@@ -18,9 +19,12 @@ class LearningAlgorithm(Algorithm):
 class DQN(LearningAlgorithm):
     def __init__(self, logger) -> None:
         super().__init__(logger)
+        self.model = SimpleNet([10, 20, 30])
 
     def make_action(self, state: list, actions: list[list]) -> list:
-        return [1, 2, 3]
+        t = torch.randn(10)
+        t = self.model(t)
+        return t.tolist()
 
     def get_reward(self, reward: float) -> float:
         return reward
