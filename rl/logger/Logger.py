@@ -1,18 +1,18 @@
-from enum import Enum
+from enum import Enum, auto
 
 
 class LogLevel(Enum):
-    DEBUG = 0
-    INFO = 1
-    WARNING = 2
-    ERROR = 3
-    FATAL = 4
+    DEBUG = auto()
+    INFO = auto()
+    WARNING = auto()
+    ERROR = auto()
+    FATAL = auto()
 
 
 class LogType(Enum):
-    CONFIG = 0
-    TRAIN = 1
-    TEST = 2
+    CONFIG = auto()
+    TRAIN = auto()
+    TEST = auto()
 
 
 class Logger:

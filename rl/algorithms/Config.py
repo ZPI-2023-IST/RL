@@ -1,10 +1,7 @@
-from enum import Enum
+from enum import Enum, auto
 
 
 class Config:
-    def __init__(self) -> None:
-        pass
-
     @staticmethod
     def from_dict(config: dict) -> None:
         config_instance = Config()
@@ -17,7 +14,7 @@ class Config:
 
 
 class ParameterType(Enum):
-    INT = 0
-    FLOAT = 1
-    BOOL = 2
-    STRING = 3
+    INT = auto()
+    FLOAT = auto()
+    BOOL = auto()
+    STRING = auto()

@@ -26,12 +26,12 @@ class DQN(LearningAlgorithm):
         t = self.model(t)
         return t.tolist()
 
-    def get_reward(self, reward: float) -> float:
+    def store_reward(self, reward: float) -> float:
         return reward
 
     @classmethod
     def _get_train_params(cls) -> dict:
-        return {"lr": (ParameterType.FLOAT.name, 0.0)}
+        return {"lr": (ParameterType.FLOAT.name, 0.0, -10, 10)}
 
     @classmethod
     def _get_test_params(cls) -> dict:

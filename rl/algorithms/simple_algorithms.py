@@ -10,12 +10,12 @@ class RandomAlgorithm(Algorithm):
     def make_action(self, state: list, actions: list[list]) -> list:
         return [1]
 
-    def get_reward(self, reward: float) -> float:
+    def store_reward(self, reward: float) -> float:
         return reward
 
     @classmethod
     def _get_train_params(cls) -> dict:
-        return {"abc": (ParameterType.INT.name, 0)}
+        return {"abc": (ParameterType.STRING.name, "aaa", None, None)}
 
     @classmethod
     def _get_test_params(cls) -> dict:

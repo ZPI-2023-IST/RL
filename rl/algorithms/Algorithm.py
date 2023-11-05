@@ -8,8 +8,12 @@ class Algorithm(ABC):
         self.logger = logger
         self.config = None
 
+        self.create_config(
+            {k: v[1] for k, v in self.get_configurable_parameters()["train"].items()}
+        )
+
     @abstractmethod
-    def get_reward(self, reward: float) -> float:
+    def store_reward(self, reward: float) -> float:
         """
         This method is called when the agent receives a reward.
         It should store the reward for future training.
@@ -24,9 +28,10 @@ class Algorithm(ABC):
     @abstractmethod
     def _get_train_params(cls) -> dict:
         """
-        Trian params should be returned as a dict of tuples,
+        Train params should be returned as a dict of tuples,
         where the first element is the type of the parameter and
-        the second element is the default value.
+        the second element is the default value, third element is the
+        minimum value and the fourth element is the maximum value.
         Key is the name of the parameter.
         """
         raise NotImplementedError
@@ -37,7 +42,8 @@ class Algorithm(ABC):
         """
         Test params should be returned as a dict of tuples,
         where the first element is the type of the parameter and
-        the second element is the default value.
+        the second element is the default value, third element is the
+        minimum value and the fourth element is the maximum value.
         Key is the name of the parameter.
         """
         raise NotImplementedError
