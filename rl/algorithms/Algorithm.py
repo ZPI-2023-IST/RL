@@ -13,7 +13,7 @@ class Algorithm(ABC):
         )
 
     @abstractmethod
-    def store_reward(self, reward: float) -> float:
+    def store_reward(self, reward: float) -> None:
         """
         This method is called when the agent receives a reward.
         It should store the reward for future training.
