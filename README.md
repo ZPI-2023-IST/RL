@@ -3,8 +3,9 @@ Repository for Reinforcement Learning framework.
 
 ## Instalation
 
-    pip install -r requirements
+    pip install -e .
 
 ## Run
 
+    cd rl
     flask --app api.main run
