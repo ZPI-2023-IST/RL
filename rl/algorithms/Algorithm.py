@@ -8,9 +8,9 @@ class Algorithm(ABC):
         self.logger = logger
         self.config = None
 
-        self.create_config(
-            {k: v[1] for k, v in self.get_configurable_parameters()["train"].items()}
-        )
+        config = {k: v[1] for k, v in self.get_configurable_parameters()["train"].items()}
+        config["mode"] = "train"
+        self.create_config(config)
 
     @abstractmethod
     def store_reward(self, reward: float) -> None:

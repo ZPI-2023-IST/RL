@@ -10,6 +10,7 @@ class RandomAlgorithm(Algorithm):
         super().__init__(logger)
 
     def make_action(self, state: list, actions: list[list]) -> list:
+        random.seed(self.config.seed)
         return random.choice(actions)
 
     def store_reward(self, reward: float) -> None:
@@ -17,8 +18,8 @@ class RandomAlgorithm(Algorithm):
 
     @classmethod
     def _get_train_params(cls) -> dict:
-        return {}
+        return {"seed": (ParameterType.INT.name, None, None, None)}
 
     @classmethod
     def _get_test_params(cls) -> dict:
-        return {}
+        return {"seed": (ParameterType.INT.name, None, None, None)}
