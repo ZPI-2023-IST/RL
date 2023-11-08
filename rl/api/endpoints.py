@@ -37,7 +37,12 @@ def config():
     """
     if request.method == "PUT":
         data = json.loads(request.data)
-        algorithm_name = data.pop("algorithm")
+
+        algorithm_name = (
+            data.pop("algorithm")
+            if "algorithm" in data.keys()
+            else algorithm_manager.algorithm_name
+        )
         algorithm_manager.set_algorithm(algorithm_name)
         algorithm_manager.configure_algorithm(data)
 

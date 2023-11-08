@@ -26,8 +26,8 @@ class DQN(LearningAlgorithm):
         t = self.model(t)
         return t.tolist()
 
-    def store_reward(self, reward: float) -> float:
-        return reward
+    def store_reward(self, reward: float) -> None:
+        pass
 
     @classmethod
     def _get_train_params(cls) -> dict:
