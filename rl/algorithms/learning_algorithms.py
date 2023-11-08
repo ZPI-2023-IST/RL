@@ -68,8 +68,8 @@ class DQN(LearningAlgorithm):
             return torch.tensor([[random.sample(actions, 1)]], device=self.device, dtype=torch.long)
 
     # TO DO - SHOULDN'T IT ALSO STORE STATE?
-    def store_reward(self, reward: float) -> float:
-        return reward
+    def store_reward(self, reward: float) -> None:
+        pass
 
     @classmethod
     def _get_train_params(cls) -> dict:

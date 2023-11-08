@@ -1,3 +1,5 @@
+import random
+
 from rl.algorithms import Algorithm, algorithm_manager
 from rl.algorithms import ParameterType
 
@@ -8,15 +10,16 @@ class RandomAlgorithm(Algorithm):
         super().__init__(logger)
 
     def make_action(self, state: list, actions: list[list]) -> list:
-        return [1]
+        random.seed(self.config.seed)
+        return random.choice(actions)
 
-    def store_reward(self, reward: float) -> float:
-        return reward
+    def store_reward(self, reward: float) -> None:
+        pass
 
     @classmethod
     def _get_train_params(cls) -> dict:
-        return {"abc": (ParameterType.STRING.name, "aaa", None, None)}
+        return {"seed": (ParameterType.INT.name, None, None, None)}
 
     @classmethod
     def _get_test_params(cls) -> dict:
-        return {}
+        return {"seed": (ParameterType.INT.name, None, None, None)}
