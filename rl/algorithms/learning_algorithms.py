@@ -15,7 +15,7 @@ class LearningAlgorithm(Algorithm):
         self.trainer = Trainer()
 
 
-@algorithm_manager.registered_algorithm("dqn")
+@algorithm_manager.register_algorithm("dqn")
 class DQN(LearningAlgorithm):
     def __init__(self, logger) -> None:
         super().__init__(logger)

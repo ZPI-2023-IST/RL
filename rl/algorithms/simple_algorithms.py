@@ -2,7 +2,7 @@ from rl.algorithms import Algorithm, algorithm_manager
 from rl.algorithms import ParameterType
 
 
-@algorithm_manager.registered_algorithm("random")
+@algorithm_manager.register_algorithm("random")
 class RandomAlgorithm(Algorithm):
     def __init__(self, logger) -> None:
         super().__init__(logger)
