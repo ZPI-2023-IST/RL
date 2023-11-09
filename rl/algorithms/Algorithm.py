@@ -8,11 +8,6 @@ class Algorithm(ABC):
         self.logger = logger
         self.config = None
 
-        config = {k: v[1] for k, v in self.get_configurable_parameters()["train"].items()}
-        config["mode"] = "train"
-        # We don't call config_model because at this stage we don't want to initiate model parameters
-        self.config = Config.from_dict(config)
-
     @abstractmethod
     def store_memory(self, state: list, reward: float) -> None:
         """

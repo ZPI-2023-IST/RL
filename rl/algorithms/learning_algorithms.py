@@ -93,6 +93,7 @@ class DQN(LearningAlgorithm):
     def _get_train_params(cls) -> dict:
         return {"n_observations": (ParameterType.INT.name, None, None, None),
                 "all_actions": (ParameterType.LIST.name, None, None, None),
+                "mode": (ParameterType.STRING.name, None, None, None),
                 "eps_start": (ParameterType.FLOAT.name, 0.9, 0, 10),
                 "eps_end": (ParameterType.FLOAT.name, 0.05, 0, 10),
                 "eps_decay": (ParameterType.FLOAT.name, 1000, 0, 10000),
@@ -101,9 +102,11 @@ class DQN(LearningAlgorithm):
                 "use_gpu": (ParameterType.BOOL.name, False, None, None),
                 "seed": (ParameterType.INT.name, 1001, 0, 100000)}
 
+    # Parameters where everything is None should be provided by translator
     @classmethod
     def _get_test_params(cls) -> dict:
-        return {"use_gpu": (ParameterType.BOOL.name, True, None, None)}
+        return {"mode": (ParameterType.STRING.name, None, None, None),
+            "use_gpu": (ParameterType.BOOL.name, True, None, None)}
     
     def config_model(self, config: dict) -> None:
         super().config_model(config)
