@@ -13,7 +13,7 @@ class RandomAlgorithm(Algorithm):
         random.seed(self.config.seed)
         return random.choice(actions)
 
-    def store_reward(self, reward: float) -> None:
+    def store_memory(self, state: list, reward: float) -> None:
         pass
 
     @classmethod

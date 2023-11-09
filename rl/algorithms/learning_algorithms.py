@@ -1,16 +1,33 @@
+from collections import namedtuple, deque
 import random
 import math
 
 import torch
 
-from rl.algorithms import Algorithm, algorithm_manager
-from rl.algorithms import ParameterType
+from rl.algorithms import Algorithm, algorithm_manager, Config, ParameterType
 from rl.algorithms.modules.SimpleNet import SimpleNet
 
 """
 Implementation based on Pytorch tutorial
 https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 """
+
+Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
+
+
+class ReplayMemory(object):
+    def __init__(self, capacity, batch_size):
+        self.memory = deque([], maxlen=capacity)
+        self.batch_size = batch_size
+
+    def push(self, *args):
+        self.memory.append(Transition(*args))
+
+    def sample(self):
+        return random.sample(self.memory, self.batch_size)
+
+    def __len__(self):
+        return len(self.memory)
 
 class Trainer:
     pass
@@ -25,33 +42,15 @@ class DQN(LearningAlgorithm):
     def __init__(self, logger) -> None:
         super().__init__(logger)
         
-        # Size of freecell input after it's flattened
-        # TO DO - change how it's used
-        self.n_observations = 2720
+        # These will be created in config_algorithm
+        self.memory = None
+        self.policy_net = None
+        self.target_net = None
+        self.steps_done = None
+        self.device = None
+        self.state_m = None
+        self.action_m = None
 
-        # Number of possible moves (some of them may be illegal)
-        # TO DO - get all possible moves
-        self.n_actions = 600
-
-        # self.gamma = 0.99
-        # TAU = 0.005
-        # LR = 1e-4
-        # BATCH_SIZE = 128
-
-        # Unmodifiable params
-        self.steps_done = 0
-        self.device = torch.device("cuda" if torch.cuda.is_available() and self.config.use_gpu else "cpu")
-
-        # Model setup - uncomment later seeds
-        #random.seed(self.config.seed)
-        #torch.manual_seed(self.config.seed)
-        self.policy_net = SimpleNet([self.n_observations, 20, 30]).to(self.device)
-        self.target_net = SimpleNet([self.n_observations, 20, 30]).to(self.device)
-        self.target_net.load_state_dict(self.policy_net.state_dict())
-
-        self.state = None
-
-    # TO DO - decide how to get the list of all possible moves
     def make_action(self, state: list, actions: list[list]) -> list:
         state = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
 
@@ -62,24 +61,58 @@ class DQN(LearningAlgorithm):
 
         if sample > eps_threshold:
             with torch.no_grad():
+                action_probs = self.policy_net(state)
                 # TO FIX - accomodate for invalid moves
                 return self.policy_net(state).max(1)[1].view(1, 1)
         else:
-            return torch.tensor([[random.sample(actions, 1)]], device=self.device, dtype=torch.long)
+            action = random.sample(actions, 1)
+            self.action_m = torch.tensor(action, device=self.device, dtype=torch.long)
+            # Reduce dimensionality of action
+            return action[0]
 
-    # TO DO - SHOULDN'T IT ALSO STORE STATE?
-    def store_reward(self, reward: float) -> None:
-        pass
+    def store_memory(self, state: list, reward: float) -> None:
+        # self.state_m contains previous state
+        if self.state_m is not None and self.action_m is not None:
+            self.memory.push(self.state_m, self.action_m, reward, state)
 
+    # Parameters where everything is None should be provided by translator
     @classmethod
     def _get_train_params(cls) -> dict:
-        return {"eps_start": (ParameterType.FLOAT.name, 0.9, 0, 10),
+        return {"n_observations": (ParameterType.INT.name, None, None, None),
+                "all_moves": (ParameterType.LIST.name, None, None, None),
+                "eps_start": (ParameterType.FLOAT.name, 0.9, 0, 10),
                 "eps_end": (ParameterType.FLOAT.name, 0.05, 0, 10),
                 "eps_decay": (ParameterType.FLOAT.name, 1000, 0, 10000),
+                "memory_size": (ParameterType.INT.name, 10000, 1, 100000),
+                "batch_size": (ParameterType.INT.name, 128, 1, 2048),
                 "use_gpu": (ParameterType.BOOL.name, False, None, None),
                 "seed": (ParameterType.INT.name, 1001, 0, 100000)}
 
     @classmethod
     def _get_test_params(cls) -> dict:
         return {"use_gpu": (ParameterType.BOOL.name, True, None, None)}
+    
+    def config_model(self, config: dict) -> None:
+        super().config_model(config)
+
+        # Unmodifiable params
+        self.steps_done = 0
+        self.device = torch.device("cuda" if torch.cuda.is_available() and self.config.use_gpu else "cpu")
+
+        # Model setup
+        #random.seed(self.config.seed)
+        #torch.manual_seed(self.config.seed)
+        self.memory = ReplayMemory(self.config.memory_size, self.config.batch_size)
+        self.policy_net = SimpleNet([self.config.n_observations, 20, len(self.config.all_moves)]).to(self.device)
+        self.target_net = SimpleNet([self.config.n_observations, 20, len(self.config.all_moves)]).to(self.device)
+        self.target_net.load_state_dict(self.policy_net.state_dict())
+
+        # Things to store later in memory
+        self.state_m = None
+        self.action_m = None
+
         
+
+# self.gamma = 0.99
+# TAU = 0.005
+# LR = 1e-4

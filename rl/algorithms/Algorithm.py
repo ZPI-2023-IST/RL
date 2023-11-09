@@ -10,13 +10,14 @@ class Algorithm(ABC):
 
         config = {k: v[1] for k, v in self.get_configurable_parameters()["train"].items()}
         config["mode"] = "train"
-        self.create_config(config)
+        # We don't call config_model because at this stage we don't want to initiate model parameters
+        self.config = Config.from_dict(config)
 
     @abstractmethod
-    def store_reward(self, reward: float) -> None:
+    def store_memory(self, state: list, reward: float) -> None:
         """
-        This method is called when the agent receives a reward.
-        It should store the reward for future training.
+        This method is called when we want to save things in memory.
+        It should store all the necessary things for for future training.
         """
         raise NotImplementedError
 
@@ -52,5 +53,5 @@ class Algorithm(ABC):
     def get_configurable_parameters(cls) -> dict:
         return {"train": cls._get_train_params(), "test": cls._get_test_params()}
 
-    def create_config(self, config: dict) -> None:
+    def config_model(self, config: dict) -> None:
         self.config = Config.from_dict(config)

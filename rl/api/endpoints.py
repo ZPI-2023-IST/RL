@@ -91,5 +91,6 @@ def action():
     moves = data["moves"]
     reward = data["reward"]
 
+    algorithm_manager.algorithm.store_memory(state, reward)
     chosen_action = algorithm_manager.algorithm.make_action(state, moves)
     return {"action": chosen_action}
