@@ -23,8 +23,23 @@ class TestAlgorithm(unittest.TestCase):
         for _ in range(10):
             self.assertEqual(action, algorithm.make_action(state, actions))
 
-    def test_registered_algorithm(self):
+    def test_registered_algorithms(self):
         from rl.algorithms import algorithm_manager
 
         for algorithm in algorithm_manager.registered_algorithms.values():
             self.assertTrue(issubclass(algorithm, Algorithm))
+
+    def test_configurable_params(self):
+        class TestAlgorithm(Algorithm):
+            @classmethod
+            def _get_train_params(cls):
+                return {"a": 1, "b": 2}
+
+            @classmethod
+            def _get_test_params(cls):
+                return {"c": 3, "d": 4}
+
+        self.assertEqual(
+            TestAlgorithm.get_configurable_parameters(),
+            {"train": {"a": 1, "b": 2}, "test": {"c": 3, "d": 4}},
+        )

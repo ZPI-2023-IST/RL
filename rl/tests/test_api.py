@@ -56,19 +56,18 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue("logs" in json.loads(response.data))
         num_logs = len(json.loads(response.data)["logs"])
-        
+
         from rl.api import logger
-        from logger.Logger import LogType
+        from rl.logger.Logger import LogType
 
         logger.info("test", LogType.CONFIG)
         response = client.get("/logs")
         self.assertEqual(response.status_code, 200)
         self.assertTrue("logs" in json.loads(response.data))
-        
+
         self.assertEqual(len(json.loads(response.data)["logs"]), num_logs + 1)
         self.assertEqual(json.loads(response.data)["logs"][num_logs]["message"], "test")
         self.assertEqual(json.loads(response.data)["logs"][num_logs]["type"], "CONFIG")
-
 
     def test_model_endpoint(self):
         client = self.client
@@ -76,7 +75,8 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue("model" in json.loads(response.data))
         model = json.loads(response.data)["model"]
-        
-        response = client.put("/model", data=json.dumps({"model": model}),
-                            content_type="application/json")
+
+        response = client.put(
+            "/model", data=json.dumps({"model": model}), content_type="application/json"
+        )
         self.assertEqual(response.status_code, 200)
