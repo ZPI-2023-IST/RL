@@ -3,7 +3,7 @@ import json
 from flask import request
 
 from rl.api import logger, app, algorithm_manager
-from logger.Logger import LogType
+from rl.logger.Logger import LogType
 
 
 @app.route("/logs")
