@@ -33,7 +33,7 @@ class ReplayMemory(object):
         return len(self.memory)
     
 
-@algorithm_manager.registered_algorithm("dqn")
+@algorithm_manager.register_algorithm("dqn")
 class DQN(Algorithm):
     def __init__(self, logger) -> None:
         super().__init__(logger)

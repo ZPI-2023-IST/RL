@@ -9,3 +9,8 @@ Repository for Reinforcement Learning framework.
 
     cd rl
     flask --app api.main run
+
+## Tests
+
+    cd rl
+    python -m unittest
