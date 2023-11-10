@@ -15,9 +15,9 @@ setuptools.setup(
     package_dir={'': '.'},
 
     install_requires=[
-        "flask",
-        "numpy",
-        "torch",
+        "flask==3.0.0",
+        "numpy==1.26.1",
+        "torch==2.1.0",
     ]
 )
 
