@@ -172,8 +172,8 @@ class DQN(Algorithm):
         self.device = torch.device("cuda" if torch.cuda.is_available() and self.config.use_gpu else "cpu")
 
         # Model setup
-        #random.seed(self.config.seed)
-        #torch.manual_seed(self.config.seed)
+        random.seed(self.config.seed)
+        torch.manual_seed(self.config.seed)
         self.memory = ReplayMemory(self.config.memory_size, self.config.batch_size)
         self.policy_net = SimpleNet([self.config.n_observations, 20, self.config.n_actions]).to(self.device)
         self.target_net = SimpleNet([self.config.n_observations, 20, self.config.n_actions]).to(self.device)
