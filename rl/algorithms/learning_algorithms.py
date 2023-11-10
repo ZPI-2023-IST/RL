@@ -3,10 +3,12 @@ import random
 import math
 
 import torch
-
-from rl.algorithms import Algorithm, algorithm_manager, Config, ParameterType
-from rl.algorithms.modules.SimpleNet import SimpleNet
+import torch.nn as nn
+import torch.optim as optim
 from torch.nn.functional import softmax
+
+from rl.algorithms import Algorithm, algorithm_manager, ParameterType, States
+from rl.algorithms.modules.SimpleNet import SimpleNet
 
 """
 Implementation based on Pytorch tutorial
@@ -29,26 +31,20 @@ class ReplayMemory(object):
 
     def __len__(self):
         return len(self.memory)
-
-class Trainer:
-    pass
-
-class LearningAlgorithm(Algorithm):
-    def __init__(self, logger) -> None:
-        super().__init__(logger)
-        self.trainer = Trainer()
+    
 
 @algorithm_manager.registered_algorithm("dqn")
-class DQN(LearningAlgorithm):
+class DQN(Algorithm):
     def __init__(self, logger) -> None:
         super().__init__(logger)
         
         # These will be created in config_algorithm
+        self.steps_done = None
+        self.device = None
         self.memory = None
         self.policy_net = None
         self.target_net = None
-        self.steps_done = None
-        self.device = None
+        self.optimizer = None
         self.state_m = None
         self.action_m = None
 
@@ -86,7 +82,58 @@ class DQN(LearningAlgorithm):
     def store_memory(self, state: list, reward: float) -> None:
         # self.state_m contains previous state
         if self.state_m is not None and self.action_m is not None:
-            self.memory.push(self.state_m, self.action_m, reward, state)
+            next_state = torch.tensor([state], dtype=torch.float32) if state else None
+            self.memory.push(self.state_m, self.action_m, next_state, torch.tensor([reward], dtype=torch.float32))
+
+    def optimize_model(self):
+        if self.config.mode == States.TRAIN.value:
+            if len(self.memory) < self.config.batch_size:
+                return
+            
+            transitions = self.memory.sample()
+            batch = Transition(*zip(*transitions))
+
+            # Compute a mask of non-final states and concatenate the batch elements
+            # (a final state would've been the one after which simulation ended)
+            non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), device=self.device, dtype=torch.bool)
+            non_final_next_states = torch.cat([s for s in batch.next_state if s is not None])
+
+            state_batch = torch.cat(batch.state)
+            action_batch = torch.cat(batch.action)
+            reward_batch = torch.cat(batch.reward)
+            
+            # Note - here the net can give improper moves because it will later be punished for it
+            # Compute actions which would've been taken for each batch state according to policy net
+            state_action_values = self.policy_net(state_batch).gather(1, action_batch)
+
+            # Note - here the net can give improper moves because it will later be punished for it
+            # Compute V(s_{t+1}) for all next states.
+            next_state_values = torch.zeros(self.config.batch_size, device=self.device)
+            with torch.no_grad():
+                next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1)[0]
+
+            # Compute the expected Q values
+            expected_state_action_values = (next_state_values * self.config.gamma) + reward_batch
+
+            # Compute loss
+            criterion = nn.SmoothL1Loss()
+            # We do repeat to avoid warning message
+            loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1).repeat(1, 3))
+
+            # Optimize the model
+            self.optimizer.zero_grad()
+            loss.backward()
+
+            # Gradient clipping
+            torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
+            self.optimizer.step()
+
+            # Soft update of the target network's weights
+            target_net_state_dict = self.target_net.state_dict()
+            policy_net_state_dict = self.policy_net.state_dict()
+            for key in policy_net_state_dict:
+                target_net_state_dict[key] = policy_net_state_dict[key] * self.config.tau + target_net_state_dict[key] * (1 - self.config.tau)
+            self.target_net.load_state_dict(target_net_state_dict)
 
     # Parameters where everything is None should be provided by translator
     @classmethod
@@ -99,6 +146,9 @@ class DQN(LearningAlgorithm):
                 "eps_decay": (ParameterType.FLOAT.name, 1000, 0, 10000),
                 "memory_size": (ParameterType.INT.name, 10000, 1, 100000),
                 "batch_size": (ParameterType.INT.name, 128, 1, 2048),
+                "gamma": (ParameterType.FLOAT.name, 0.99, 0, 10),
+                "tau": (ParameterType.FLOAT.name, 0.005, 0, 10),
+                "lr": (ParameterType.FLOAT.name, 1e-4, 0, 10),
                 "use_gpu": (ParameterType.BOOL.name, False, None, None),
                 "seed": (ParameterType.INT.name, 1001, 0, 100000)}
 
@@ -116,12 +166,15 @@ class DQN(LearningAlgorithm):
         self.device = torch.device("cuda" if torch.cuda.is_available() and self.config.use_gpu else "cpu")
 
         # Model setup
-        #random.seed(self.config.seed)
-        #torch.manual_seed(self.config.seed)
+        random.seed(self.config.seed)
+        torch.manual_seed(self.config.seed)
         self.memory = ReplayMemory(self.config.memory_size, self.config.batch_size)
         self.policy_net = SimpleNet([self.config.n_observations, 20, len(self.config.all_actions)]).to(self.device)
         self.target_net = SimpleNet([self.config.n_observations, 20, len(self.config.all_actions)]).to(self.device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
+
+        # Optimizer setup
+        self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=self.config.lr, amsgrad=True)
 
         # Things to store later in memory
         self.state_m = None
@@ -134,10 +187,3 @@ class DQN(LearningAlgorithm):
                 action_probs[i] = -1
 
         return action_probs
-
-
-        
-
-# self.gamma = 0.99
-# TAU = 0.005
-# LR = 1e-4

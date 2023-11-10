@@ -19,6 +19,14 @@ class Algorithm(ABC):
     @abstractmethod
     def make_action(self, state: list, actions: list[list]) -> list:
         raise NotImplementedError
+    
+    @abstractmethod
+    def optimize_model(self) -> None:
+        """
+        This function is used to optimize the model.
+        Optimization is only done during training
+        """
+        raise NotImplementedError
 
     @classmethod
     @abstractmethod

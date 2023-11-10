@@ -16,6 +16,9 @@ class RandomAlgorithm(Algorithm):
     def store_memory(self, state: list, reward: float) -> None:
         pass
 
+    def optimize_model(self) -> None:
+        pass
+
     @classmethod
     def _get_train_params(cls) -> dict:
         return {"seed": (ParameterType.INT.name, None, None, None)}

@@ -11,6 +11,11 @@ class Config:
 
     def as_dict(self) -> dict:
         return self.__dict__
+    
+
+class States(Enum):
+    TRAIN = "train"
+    TEST = "test"
 
 
 class ParameterType(Enum):
