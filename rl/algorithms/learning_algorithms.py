@@ -49,8 +49,7 @@ class DQN(Algorithm):
         self.action_m = None
 
     def make_action(self, state: list, actions: list[list]) -> list:
-        state = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
-        self.state_m = state
+        self.state_m = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
 
         sample = random.random()
         eps_threshold = self.config.eps_end + (self.config.eps_start - self.config.eps_end) * \
@@ -60,9 +59,10 @@ class DQN(Algorithm):
         if sample > eps_threshold:
             with torch.no_grad():
                 # Reduce dimensionality of model output
-                ml_output = self.policy_net(state)[0]
+                ml_output = self.policy_net(self.state_m)[0]
 
-                # TO DO - save illegal moves with negative reward
+                # This action may be illegal
+                ml_action = ml_output.argmax().item()
 
                 # We want to remove illegal moves
                 # To make illegal moves deletion easier we calculate softmax so that all our values are in the range of 0 to 1
@@ -70,6 +70,12 @@ class DQN(Algorithm):
                 mod_action_probs = self._remove_invalid_moves(action_probs, actions)
 
                 action = mod_action_probs.argmax().item()
+
+                # Add negative reward if ml_action is different from action
+                if ml_action != action:
+                    self.action_m = torch.tensor([[ml_action]], device=self.device, dtype=torch.long)
+                    self.store_memory(state, -10)
+
                 self.action_m = torch.tensor([[action]], device=self.device, dtype=torch.long)
 
                 return action
@@ -82,7 +88,7 @@ class DQN(Algorithm):
     def store_memory(self, state: list, reward: float) -> None:
         # self.state_m contains previous state
         if self.state_m is not None and self.action_m is not None:
-            next_state = torch.tensor([state], dtype=torch.float32) if state else None
+            next_state = torch.tensor([state], dtype=torch.float32) if state is not None else None
             self.memory.push(self.state_m, self.action_m, next_state, torch.tensor([reward], dtype=torch.float32))
 
     def optimize_model(self):

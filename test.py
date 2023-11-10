@@ -5,7 +5,7 @@ from rl.logger.Logger import Logger
 
 model_input = [0, 0, 1, 0, 0, 1, 0, 0]
 all_actions = [0, 1, 2]
-actions = [1, 2]
+actions = [1]
 
 config = {k: v[1] for k, v in DQN.get_configurable_parameters()["train"].items()}
 config["n_observations"] = len(model_input)
