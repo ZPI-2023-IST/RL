@@ -62,20 +62,20 @@ class DQN(Algorithm):
                 # Reduce dimensionality of model output
                 ml_output = self.policy_net(state)[0]
 
+                # TO DO - save illegal moves with negative reward
+
                 # We want to remove illegal moves
                 # To make illegal moves deletion easier we calculate softmax so that all our values are in the range of 0 to 1
                 action_probs = softmax(ml_output, dim=0)
                 mod_action_probs = self._remove_invalid_moves(action_probs, actions)
 
-                chosen_action_index = mod_action_probs.argmax().item()
-                action = actions[chosen_action_index]
-
-                self.action_m = torch.tensor([action], device=self.device, dtype=torch.long)
+                action = mod_action_probs.argmax().item()
+                self.action_m = torch.tensor([[action]], device=self.device, dtype=torch.long)
 
                 return action
         else:
             action = random.sample(actions, 1)
-            self.action_m = torch.tensor(action, device=self.device, dtype=torch.long)
+            self.action_m = torch.tensor([action], device=self.device, dtype=torch.long)
             # Reduce dimensionality of action
             return action[0]
 
@@ -118,7 +118,7 @@ class DQN(Algorithm):
             # Compute loss
             criterion = nn.SmoothL1Loss()
             # We do repeat to avoid warning message
-            loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1).repeat(1, 3))
+            loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
 
             # Optimize the model
             self.optimizer.zero_grad()
@@ -139,7 +139,7 @@ class DQN(Algorithm):
     @classmethod
     def _get_train_params(cls) -> dict:
         return {"n_observations": (ParameterType.INT.name, None, None, None),
-                "all_actions": (ParameterType.LIST.name, None, None, None),
+                "n_actions": (ParameterType.LIST.name, None, None, None),
                 "mode": (ParameterType.STRING.name, None, None, None),
                 "eps_start": (ParameterType.FLOAT.name, 0.9, 0, 10),
                 "eps_end": (ParameterType.FLOAT.name, 0.05, 0, 10),
@@ -166,11 +166,11 @@ class DQN(Algorithm):
         self.device = torch.device("cuda" if torch.cuda.is_available() and self.config.use_gpu else "cpu")
 
         # Model setup
-        random.seed(self.config.seed)
-        torch.manual_seed(self.config.seed)
+        #random.seed(self.config.seed)
+        #torch.manual_seed(self.config.seed)
         self.memory = ReplayMemory(self.config.memory_size, self.config.batch_size)
-        self.policy_net = SimpleNet([self.config.n_observations, 20, len(self.config.all_actions)]).to(self.device)
-        self.target_net = SimpleNet([self.config.n_observations, 20, len(self.config.all_actions)]).to(self.device)
+        self.policy_net = SimpleNet([self.config.n_observations, 20, self.config.n_actions]).to(self.device)
+        self.target_net = SimpleNet([self.config.n_observations, 20, self.config.n_actions]).to(self.device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
 
         # Optimizer setup
@@ -180,10 +180,9 @@ class DQN(Algorithm):
         self.state_m = None
         self.action_m = None
 
-    # Remove invalid moves by setting the probs of performing given move at -1
+    # Remove invalid moves by adding 2 to the probability of performing legal moves
     def _remove_invalid_moves(self, action_probs, actions):
-        for i, action in enumerate(self.config.all_actions):
-            if action not in actions:
-                action_probs[i] = -1
+        for act in actions:
+            action_probs[act] += 2
 
         return action_probs
