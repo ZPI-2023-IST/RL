@@ -145,7 +145,7 @@ class DQN(Algorithm):
     @classmethod
     def _get_train_params(cls) -> dict:
         return {"n_observations": (ParameterType.INT.name, None, None, None),
-                "n_actions": (ParameterType.LIST.name, None, None, None),
+                "n_actions": (ParameterType.INT.name, None, None, None),
                 "mode": (ParameterType.STRING.name, None, None, None),
                 "eps_start": (ParameterType.FLOAT.name, 0.9, 0, 10),
                 "eps_end": (ParameterType.FLOAT.name, 0.05, 0, 10),
