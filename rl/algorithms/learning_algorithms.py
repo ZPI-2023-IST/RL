@@ -31,7 +31,7 @@ class DQN(LearningAlgorithm):
 
     @classmethod
     def _get_train_params(cls) -> dict:
-        return {"lr": (ParameterType.FLOAT.name, 0.0, -10, 10)}
+        return {"lr": (ParameterType.FLOAT.name, 1e-5, 0, 1)}
 
     @classmethod
     def _get_test_params(cls) -> dict:

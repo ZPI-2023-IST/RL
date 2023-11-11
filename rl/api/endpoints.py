@@ -1,9 +1,10 @@
 import json
 
 from flask import request
+import flask
 
 from rl.api import logger, app, algorithm_manager
-from logger.Logger import LogType
+from rl.logger.Logger import LogType
 
 
 @app.route("/logs")
@@ -16,7 +17,8 @@ def get_logs():
     some_filter = request.args.get("filter")
     if some_filter:
         print(f"filtering with {some_filter}")
-    return {"logs": logs}
+    response = flask.jsonify({"logs": logs})
+    return response
 
 
 @app.route("/model")
@@ -54,12 +56,13 @@ def config():
             f"New config: {algorithm_manager.algorithm.config.as_dict()}",
             LogType.CONFIG,
         )
-
-        return json.dumps(algorithm_manager.algorithm.config.as_dict())
+        response = flask.jsonify(algorithm_manager.algorithm.config.as_dict())
+        return response
     else:
         data = algorithm_manager.algorithm.config.as_dict()
         data["algorithm"] = algorithm_manager.algorithm_name
-        return json.dumps(data)
+        response = flask.jsonify(data)
+        return response
 
 
 @app.route("/config-params")
@@ -72,7 +75,8 @@ def get_configurable_parameters():
     params = {}
     for algorithm_name, algorithm in algorithm_manager.registered_algorithms.items():
         params[algorithm_name] = algorithm.get_configurable_parameters()
-    return params
+    response = flask.jsonify(params)
+    return response
 
 
 @app.route("/action", methods=["PUT"])

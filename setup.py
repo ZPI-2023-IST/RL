@@ -16,8 +16,8 @@ setuptools.setup(
 
     install_requires=[
         "flask",
+        "flask-cors",
         "numpy",
         "torch",
     ]
 )
-
