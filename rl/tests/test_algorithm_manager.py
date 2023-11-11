@@ -33,7 +33,10 @@ class TestAlgorithmManager(unittest.TestCase):
             def _get_test_params(cls):
                 return {}
 
-            def store_reward(self, reward):
+            def store_memory(self, state, reward):
+                pass
+
+            def optimize_model(self):
                 pass
 
         algorithm_manager.set_algorithm("TestAlgorithm")

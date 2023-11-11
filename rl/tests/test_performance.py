@@ -26,7 +26,12 @@ class TestPerformance(unittest.TestCase):
         num_test_games = 100
         actions = [0, 1]
 
-        algorithm.create_config({"layers": [2, 4, 2]})
+        config = {k: v[1] for k, v in DQN.get_configurable_parameters()["train"].items()}
+        config["n_observations"] = 2
+        config["n_actions"] = 2
+        config["mode"] = "train"
+
+        algorithm.config_model(config)
         reward = 0
         # Train
         for _ in range(num_train_games):
@@ -34,8 +39,8 @@ class TestPerformance(unittest.TestCase):
             correct_action = xor_game(random_state, actions)
 
             action = algorithm.make_action(random_state, actions)
-            reward = 1 if torch.argmax(action).item() == correct_action else -1
-            algorithm.store_reward(reward)
+            reward = 1 if action == correct_action else -1
+            algorithm.store_memory(None, reward)
 
         # Test
         correct = 0
@@ -44,6 +49,6 @@ class TestPerformance(unittest.TestCase):
             correct_action = xor_game(random_state, actions)
 
             action = algorithm.make_action(random_state, actions)
-            if torch.argmax(action).item() == correct_action:
+            if action == correct_action:
                 correct += 1
         self.assertTrue(correct / num_test_games > 0.9)
