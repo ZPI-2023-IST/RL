@@ -125,8 +125,12 @@ class TestDQN(unittest.TestCase):
         config["n_observations"] = 2
         config["n_actions"] = 2
         config["mode"] = "train"
-        self.algorithm.config_model(config)
 
-        action = self.algorithm.make_action(state, actions)
-
-        self.assertEqual(0, action)
+        # Because we cannot force model to choose illegal action 
+        # We test if on 100 seeds we will get the same output. It's highly unlikely that
+        # on that amount of seeds there won't be an occasion when illegal action is chosen
+        for i in range(100):
+            config["seed"] = i
+            self.algorithm.config_model(config)
+            action = self.algorithm.make_action(state, actions)
+            self.assertEqual(0, action)
