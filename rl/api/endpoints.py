@@ -1,4 +1,9 @@
+import io
 import json
+import os
+import pathlib
+import shutil
+import zipfile
 
 from flask import request
 import flask
@@ -21,12 +26,51 @@ def get_logs():
     return response
 
 
-@app.route("/model")
-def get_model():
+@app.route("/run", methods=["GET", "PUT"])
+def run():
+    """
+    """
+    return {"model": "..."}
+
+
+@app.route("/model", methods=["GET", "PUT"])
+def model():
     """
     Enpoint allows downloading model from RL module.
     """
-    return {"model": "..."}
+    data_dir = pathlib.Path("data")
+    model_dir = data_dir / "model"
+    config_name = "config.json"
+    zip_name = "params"
+    os.makedirs(model_dir, exist_ok=True)
+
+    if request.method == "GET":
+        config = algorithm_manager.algorithm.config.as_dict()
+        config["algorithm"] = algorithm_manager.algorithm_name
+
+        with open(model_dir / config_name, "w") as f:
+            json.dump(config, f)
+        
+        shutil.make_archive(data_dir / zip_name, 'zip', model_dir)
+        response = flask.send_file(pathlib.Path(f"../{data_dir / zip_name}.zip"), as_attachment=True)
+        return response
+    else:
+        data = request.data
+        z = zipfile.ZipFile(io.BytesIO(data))
+        z.extractall(data_dir)
+        with open(data_dir / config_name, "r") as f:
+            config = json.load(f)
+            algorithm_manager.set_algorithm(config.pop("algorithm"))
+            algorithm_manager.configure_algorithm(config)
+            logger.info(
+                f"Imported config for algorithm {algorithm_manager.algorithm_name}",
+                LogType.CONFIG,
+            )
+            logger.info(
+                f"New config: {algorithm_manager.algorithm.config.as_dict()}",
+                LogType.CONFIG,
+            )
+        return flask.jsonify({"success": "success"})
 
 
 @app.route("/config", methods=["GET", "PUT"])
