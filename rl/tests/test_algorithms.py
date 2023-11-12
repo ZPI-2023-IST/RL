@@ -17,12 +17,12 @@ class TestAlgorithm(unittest.TestCase):
 
         actions = [[1, 2, 3], [4, 5, 6]]
         state = [1, 2, 3]
-        action = algorithm.make_action(state, actions)
+        action = algorithm.forward(state, actions, -1)
         self.assertTrue(action in actions)
 
-        action = algorithm.make_action(state, actions)
+        action = algorithm.forward(state, actions, -1)
         for _ in range(10):
-            self.assertEqual(action, algorithm.make_action(state, actions))
+            self.assertEqual(action, algorithm.forward(state, actions, -1))
 
     def test_registered_algorithms(self):
         from rl.algorithms import algorithm_manager

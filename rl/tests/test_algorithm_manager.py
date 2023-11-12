@@ -22,7 +22,7 @@ class TestAlgorithmManager(unittest.TestCase):
     def test_set_algorithm(self):
         @algorithm_manager.register_algorithm("TestAlgorithm")
         class TestAlgorithm(Algorithm):
-            def make_action(self, state, actions):
+            def forward(self, state, actions, reward):
                 pass
 
             @classmethod
@@ -32,12 +32,6 @@ class TestAlgorithmManager(unittest.TestCase):
             @classmethod
             def _get_test_params(cls):
                 return {}
-
-            def store_memory(self, state, reward):
-                pass
-
-            def optimize_model(self):
-                pass
 
         algorithm_manager.set_algorithm("TestAlgorithm")
         self.assertTrue(isinstance(algorithm_manager.algorithm, TestAlgorithm))

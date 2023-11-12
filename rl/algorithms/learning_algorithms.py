@@ -48,7 +48,13 @@ class DQN(Algorithm):
         self.state_m = None
         self.action_m = None
 
-    def make_action(self, state: list, actions: list[list]) -> list:
+    def forward(self, state: list, actions: list, reward: float) -> int:
+        self._store_memory(state, reward)
+        self._optimize_model()
+        chosen_action = self._make_action(state, actions)
+        return chosen_action
+
+    def _make_action(self, state: list, actions: list[list]) -> list:
         self.state_m = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
 
         sample = random.random()
@@ -74,7 +80,7 @@ class DQN(Algorithm):
                 # Add negative reward if ml_action is different from action
                 if ml_action != action:
                     self.action_m = torch.tensor([[ml_action]], device=self.device, dtype=torch.long)
-                    self.store_memory(state, -10)
+                    self._store_memory(state, -10)
 
                 self.action_m = torch.tensor([[action]], device=self.device, dtype=torch.long)
 
@@ -85,13 +91,13 @@ class DQN(Algorithm):
             # Reduce dimensionality of action
             return action[0]
 
-    def store_memory(self, state: list, reward: float) -> None:
+    def _store_memory(self, state: list, reward: float) -> None:
         # self.state_m contains previous state
         if self.state_m is not None and self.action_m is not None:
             next_state = torch.tensor([state], dtype=torch.float32) if state is not None else None
             self.memory.push(self.state_m, self.action_m, next_state, torch.tensor([reward], dtype=torch.float32))
 
-    def optimize_model(self):
+    def _optimize_model(self):
         if self.config.mode == States.TRAIN.value:
             if len(self.memory) < self.config.batch_size:
                 return

@@ -27,7 +27,7 @@ class TestDQN(unittest.TestCase):
         config["eps_end"] = 10
         self.algorithm.config_model(config)
 
-        action = self.algorithm.make_action(state, actions)
+        action = self.algorithm._make_action(state, actions)
         self.assertIsInstance(action, int)
 
         # Force to go the second way of select action
@@ -35,7 +35,7 @@ class TestDQN(unittest.TestCase):
         config["eps_end"] = -10
         self.algorithm.config_model(config)
 
-        action = self.algorithm.make_action(state, actions)
+        action = self.algorithm._make_action(state, actions)
         self.assertIsInstance(action, int)
 
     def test_dqn_store_memory(self):
@@ -51,8 +51,8 @@ class TestDQN(unittest.TestCase):
         config["mode"] = "train"
         self.algorithm.config_model(config)
         # We need to have something to store in the memory
-        self.algorithm.make_action(state, actions)
-        self.algorithm.store_memory(next_state, reward)
+        self.algorithm._make_action(state, actions)
+        self.algorithm._store_memory(next_state, reward)
 
         self.assertEqual(len(self.algorithm.memory), 1)
 
@@ -64,8 +64,8 @@ class TestDQN(unittest.TestCase):
 
         self.algorithm.config_model(config)
         for _ in range(n_iterations):
-            self.algorithm.store_memory(next_state, reward)
-            self.algorithm.make_action(state, actions)
+            self.algorithm._store_memory(next_state, reward)
+            self.algorithm._make_action(state, actions)
 
         # First memory should not be stored because state and action are nulls
         self.assertEqual(len(self.algorithm.memory), n_iterations-1)
@@ -89,9 +89,9 @@ class TestDQN(unittest.TestCase):
         policy_net_state_dict = copy.deepcopy(self.algorithm.policy_net.state_dict())
 
         for _ in range(n_iterations):
-            self.algorithm.store_memory(next_state, reward)
-            self.algorithm.optimize_model()
-            action = self.algorithm.make_action(state, actions)
+            self.algorithm._store_memory(next_state, reward)
+            self.algorithm._optimize_model()
+            action = self.algorithm._make_action(state, actions)
 
             reward = 1 if action == 0 else -1
 
@@ -106,9 +106,9 @@ class TestDQN(unittest.TestCase):
         policy_net_state_dict = copy.deepcopy(self.algorithm.policy_net.state_dict())
 
         for _ in range(n_iterations):
-            self.algorithm.store_memory(next_state, reward)
-            self.algorithm.optimize_model()
-            action = self.algorithm.make_action(state, actions)
+            self.algorithm._store_memory(next_state, reward)
+            self.algorithm._optimize_model()
+            action = self.algorithm._make_action(state, actions)
 
             reward = 1 if action == 0 else -1
 
@@ -132,5 +132,5 @@ class TestDQN(unittest.TestCase):
         for i in range(100):
             config["seed"] = i
             self.algorithm.config_model(config)
-            action = self.algorithm.make_action(state, actions)
+            action = self.algorithm._make_action(state, actions)
             self.assertEqual(0, action)

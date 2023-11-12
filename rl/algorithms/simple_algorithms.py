@@ -9,15 +9,9 @@ class RandomAlgorithm(Algorithm):
     def __init__(self, logger) -> None:
         super().__init__(logger)
 
-    def make_action(self, state: list, actions: list[list]) -> list:
+    def forward(self, state, actions, reward: float) -> int:
         random.seed(self.config.seed)
         return random.choice(actions)
-
-    def store_memory(self, state: list, reward: float) -> None:
-        pass
-
-    def optimize_model(self) -> None:
-        pass
 
     @classmethod
     def _get_train_params(cls) -> dict:

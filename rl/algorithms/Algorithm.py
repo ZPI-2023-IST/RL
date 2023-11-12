@@ -9,24 +9,11 @@ class Algorithm(ABC):
         self.config = None
 
     @abstractmethod
-    def store_memory(self, state: list, reward: float) -> None:
+    def forward(self, state: list, actions: list, reward: float) -> int:
         """
-        This method is called when we want to save things in memory.
-        It should store all the necessary things for for future training.
+        This method is called to perform one iteration of model
         """
-        raise NotImplementedError
-
-    @abstractmethod
-    def make_action(self, state: list, actions: list[list]) -> list:
-        raise NotImplementedError
-    
-    @abstractmethod
-    def optimize_model(self) -> None:
-        """
-        This function is used to optimize the model.
-        Optimization is only done during training
-        """
-        raise NotImplementedError
+        pass
 
     @classmethod
     @abstractmethod
