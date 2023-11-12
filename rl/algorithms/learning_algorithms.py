@@ -186,9 +186,10 @@ class DQN(Algorithm):
         self.state_m = None
         self.action_m = None
 
-    # Remove invalid moves by adding 2 to the probability of performing legal moves
+    # Remove invalid moves by setting all invalid moves to 0
     def _remove_invalid_moves(self, action_probs, actions):
-        for act in actions:
-            action_probs[act] += 2
+        for act in range(self.config.n_actions):
+            if act not in actions:
+                action_probs[act] = 0
 
         return action_probs
