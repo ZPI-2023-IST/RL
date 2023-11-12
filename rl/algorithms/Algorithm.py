@@ -8,7 +8,9 @@ class Algorithm(ABC):
         self.logger = logger
         self.config = None
 
-        config = {k: v[1] for k, v in self.get_configurable_parameters()["train"].items()}
+        config = {
+            k: v[1] for k, v in self.get_configurable_parameters()["train"].items()
+        }
         config["mode"] = "train"
         self.create_config(config)
 

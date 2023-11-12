@@ -8,7 +8,7 @@ import zipfile
 from flask import request
 import flask
 
-from rl.api import logger, app, algorithm_manager
+from rl.api import logger, app, algorithm_manager, runner
 from rl.logger.Logger import LogType
 
 
@@ -29,8 +29,19 @@ def get_logs():
 @app.route("/run", methods=["GET", "PUT"])
 def run():
     """
+    Endpoint allows for starting and stopping training/testing process.
     """
-    return {"model": "..."}
+    if request.method == "PUT":
+        data = json.loads(request.data)
+        run = data["run"]
+        if run:
+            algorithm_manager.algorithm.config.mode = data["mode"]
+            runner.start()
+        else:
+            runner.stop()
+        return flask.jsonify({"run": run})
+    else:
+        return flask.jsonify({"run": runner.running})  
 
 
 @app.route("/model", methods=["GET", "PUT"])
@@ -50,9 +61,11 @@ def model():
 
         with open(model_dir / config_name, "w") as f:
             json.dump(config, f)
-        
-        shutil.make_archive(data_dir / zip_name, 'zip', model_dir)
-        response = flask.send_file(pathlib.Path(f"../{data_dir / zip_name}.zip"), as_attachment=True)
+
+        shutil.make_archive(data_dir / zip_name, "zip", model_dir)
+        response = flask.send_file(
+            pathlib.Path(f"../{data_dir / zip_name}.zip"), as_attachment=True
+        )
         return response
     else:
         data = request.data
@@ -63,11 +76,7 @@ def model():
             algorithm_manager.set_algorithm(config.pop("algorithm"))
             algorithm_manager.configure_algorithm(config)
             logger.info(
-                f"Imported config for algorithm {algorithm_manager.algorithm_name}",
-                LogType.CONFIG,
-            )
-            logger.info(
-                f"New config: {algorithm_manager.algorithm.config.as_dict()}",
+                f"Imported model",
                 LogType.CONFIG,
             )
         return flask.jsonify({"success": "success"})
@@ -91,15 +100,6 @@ def config():
         )
         algorithm_manager.set_algorithm(algorithm_name)
         algorithm_manager.configure_algorithm(data)
-
-        logger.info(
-            f"Configured algorithm {algorithm_name}",
-            LogType.CONFIG,
-        )
-        logger.info(
-            f"New config: {algorithm_manager.algorithm.config.as_dict()}",
-            LogType.CONFIG,
-        )
         response = flask.jsonify(algorithm_manager.algorithm.config.as_dict())
         return response
     else:
