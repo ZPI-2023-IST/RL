@@ -16,6 +16,7 @@ class TestAPI(unittest.TestCase):
         response = client.get("/config")
         self.assertEqual(response.status_code, 200)
 
+        algorithm_manager.set_default_algorithm()
         algorithm_manager.configure_algorithm({"seed": 1})
         response = client.get("/config")
         self.assertEqual(response.status_code, 200)
@@ -32,10 +33,18 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(json.loads(response.data)["seed"], 2)
 
     def test_algorithm_update(self):
+        config = {
+            k: v[1] for k, v in DQN.get_configurable_parameters()["train"].items()
+        }
+        config["algorithm"] = "dqn"
+        config["n_observations"] = 1
+        config["n_actions"] = 1
+        config["mode"] = "train"
+
         client = self.client
         response = client.put(
             "/config",
-            data=json.dumps({"algorithm": "dqn"}),
+            data=json.dumps(config),
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)

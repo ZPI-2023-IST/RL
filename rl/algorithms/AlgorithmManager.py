@@ -20,7 +20,7 @@ class AlgorithmManager:
         self.algorithm_name = algorithm_name
 
     def configure_algorithm(self, config: dict) -> None:
-        self.algorithm.create_config(config)
+        self.algorithm.config_model(config)
 
     def register_algorithm(self, name: str):
         def decorator(cls):
