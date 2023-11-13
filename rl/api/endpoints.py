@@ -7,6 +7,7 @@ import zipfile
 
 from flask import request
 import flask
+import torch
 
 from rl.api import logger, app, algorithm_manager, runner
 from rl.logger.Logger import LogType
@@ -52,6 +53,7 @@ def model():
     data_dir = pathlib.Path("data")
     model_dir = data_dir / "model"
     config_name = "config.json"
+    params_name = "params.pt"
     zip_name = "params"
     os.makedirs(model_dir, exist_ok=True)
 
@@ -61,6 +63,10 @@ def model():
 
         with open(model_dir / config_name, "w") as f:
             json.dump(config, f)
+            
+        model = algorithm_manager.algorithm.get_model()
+        if model:
+            torch.save(model.state_dict(), model_dir / params_name)
 
         shutil.make_archive(data_dir / zip_name, "zip", model_dir)
         response = flask.send_file(
@@ -75,10 +81,15 @@ def model():
             config = json.load(f)
             algorithm_manager.set_algorithm(config.pop("algorithm"))
             algorithm_manager.configure_algorithm(config)
-            logger.info(
-                f"Imported model",
-                LogType.CONFIG,
-            )
+        
+        if os.path.isfile(data_dir / params_name):
+            params = torch.load(data_dir / params_name)
+            algorithm_manager.algorithm.set_params(params)
+        
+        logger.info(
+            f"Imported model",
+            LogType.CONFIG,
+        )
         return flask.jsonify({"success": "success"})
 
 

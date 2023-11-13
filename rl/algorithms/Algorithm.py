@@ -24,7 +24,15 @@ class Algorithm(ABC):
     @classmethod
     @abstractmethod
     def get_configurable_parameters(cls) -> dict:
-        return {}
+        pass
+    
+    @abstractmethod
+    def get_model(self) -> object:
+        pass
+    
+    @abstractmethod
+    def set_params(self, params) -> object:
+        pass
 
     def config_model(self, config: dict) -> None:
         self.config = Config.from_dict(config)

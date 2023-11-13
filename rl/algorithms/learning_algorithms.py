@@ -301,3 +301,10 @@ class DQN(Algorithm):
                 action_probs[act] = 0
 
         return action_probs
+
+    def get_model(self):
+        return self.policy_net
+    
+    def set_params(self, params):
+        self.policy_net.load_state_dict(params)
+        self.target_net.load_state_dict(params)
