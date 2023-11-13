@@ -139,5 +139,5 @@ def action():
     moves = data["moves"]
     reward = data["reward"]
 
-    chosen_action = algorithm_manager.algorithm.make_action(state, moves)
+    chosen_action = algorithm_manager.algorithm.forward(state, moves, reward)
     return {"action": chosen_action}

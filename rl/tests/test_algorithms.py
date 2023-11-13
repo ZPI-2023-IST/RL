@@ -7,21 +7,22 @@ from rl.logger.Logger import Logger
 class TestAlgorithm(unittest.TestCase):
     def test_config(self):
         algorithm = RandomAlgorithm(Logger())
-        algorithm.create_config({"a": 1, "b": 2})
+        algorithm.config_model({"a": 1, "b": 2})
         self.assertEqual(algorithm.config.a, 1)
         self.assertEqual(algorithm.config.b, 2)
 
     def test_random(self):
         algorithm = RandomAlgorithm(Logger())
+        algorithm.config_model({"seed": 1})
+
         actions = [[1, 2, 3], [4, 5, 6]]
         state = [1, 2, 3]
-        action = algorithm.make_action(state, actions)
+        action = algorithm.forward(state, actions, -1)
         self.assertTrue(action in actions)
 
-        algorithm.create_config({"seed": 1})
-        action = algorithm.make_action(state, actions)
+        action = algorithm.forward(state, actions, -1)
         for _ in range(10):
-            self.assertEqual(action, algorithm.make_action(state, actions))
+            self.assertEqual(action, algorithm.forward(state, actions, -1))
 
     def test_registered_algorithms(self):
         from rl.algorithms import algorithm_manager

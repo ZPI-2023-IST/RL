@@ -13,8 +13,14 @@ class Config:
         return self.__dict__
 
 
+class States(Enum):
+    TRAIN = "train"
+    TEST = "test"
+
+
 class ParameterType(Enum):
     INT = auto()
     FLOAT = auto()
     BOOL = auto()
     STRING = auto()
+    LIST = auto()
