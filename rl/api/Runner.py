@@ -53,7 +53,6 @@ class Runner:
         self.sio.connect("http://localhost:5002", wait_timeout=10)
         self.sio.emit("make_move", json.dumps({"move": None}))
 
-        control = 1
         move = None
         game_step = 0
         while self.running:
@@ -64,23 +63,9 @@ class Runner:
             reward = self.data["reward"]
             state = self.data["game_board"]
             actions = self.data["moves_vector"]
-            api_control = self.data["control"]
 
             self.data = None
 
-            if api_control != control and move is not None:
-                mode = self.algorithm_manager.algorithm.config.mode
-                self.logger.log(
-                    "Synchronization error",
-                    LogLevel.ERROR,
-                    LogType.TRAIN if mode == "train" else LogType.TEST,
-                )
-                self.running = False
-                break
-            else:
-                control = api_control
-
-            control += 1
             game_step += 1
             if len(actions) == 0 or game_step > self.max_game_len:
                 self.sio.emit("make_move", json.dumps({"move": None}))
