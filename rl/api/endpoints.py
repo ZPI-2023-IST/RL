@@ -100,7 +100,8 @@ def config():
         )
         algorithm_manager.set_algorithm(algorithm_name)
         algorithm_manager.configure_algorithm(data)
-        response = flask.jsonify(algorithm_manager.algorithm.config.as_dict())
+        response_data = algorithm_manager.algorithm.config.as_dict()
+        response = flask.jsonify(response_data)
         return response
     else:
         data = algorithm_manager.algorithm.config.as_dict()
@@ -121,23 +122,3 @@ def get_configurable_parameters():
         params[algorithm_name] = algorithm.get_configurable_parameters()
     response = flask.jsonify(params)
     return response
-
-
-@app.route("/action", methods=["PUT"])
-def action():
-    """
-    Endpoint allows for getting an action from model, based
-    on game state. According to mode, there may run some training
-    process. Required keys in request (types are probably going to
-    change):
-        state: List[float] - game state
-        moves: List[List[Int]] - allowed moves
-        reward: float - reward for previous action
-    """
-    data = json.loads(request.data)
-    state = data["state"]
-    moves = data["moves"]
-    reward = data["reward"]
-
-    chosen_action = algorithm_manager.algorithm.forward(state, moves, reward)
-    return {"action": chosen_action}

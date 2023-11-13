@@ -1,16 +1,17 @@
 from abc import ABC, abstractmethod
+from collections import namedtuple
 
 from rl.algorithms.Config import Config
+
+Parameter = namedtuple("Parameter", ("type", "default", "min", "max", "help"))
 
 
 class Algorithm(ABC):
     def __init__(self, logger) -> None:
         self.logger = logger
         self.config = None
-        
-        config = {
-            k: v[1] for k, v in self.get_configurable_parameters().items()
-        }
+
+        config = {k: v[1] for k, v in self.get_configurable_parameters().items()}
         self.config_model(config)
 
     @abstractmethod

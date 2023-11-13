@@ -1,6 +1,6 @@
 import random
 
-from rl.algorithms import Algorithm, algorithm_manager
+from rl.algorithms import Algorithm, algorithm_manager, Parameter
 from rl.algorithms import ParameterType
 
 
@@ -15,4 +15,4 @@ class RandomAlgorithm(Algorithm):
 
     @classmethod
     def get_configurable_parameters(cls) -> dict:
-        return {"seed": (ParameterType.INT.name, None, None, None)}
+        return {"seed": Parameter(ParameterType.INT.name, None, 0, 1000, "Random seed")}
