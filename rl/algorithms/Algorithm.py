@@ -9,9 +9,8 @@ class Algorithm(ABC):
         self.config = None
         
         config = {
-            k: v[1] for k, v in self.get_configurable_parameters()["train"].items()
+            k: v[1] for k, v in self.get_configurable_parameters().items()
         }
-        config["mode"] = "train"
         self.config_model(config)
 
     @abstractmethod
@@ -23,31 +22,8 @@ class Algorithm(ABC):
 
     @classmethod
     @abstractmethod
-    def _get_train_params(cls) -> dict:
-        """
-        Train params should be returned as a dict of tuples,
-        where the first element is the type of the parameter and
-        the second element is the default value, third element is the
-        minimum value and the fourth element is the maximum value.
-        Key is the name of the parameter.
-        """
-        raise NotImplementedError
-
-    @classmethod
-    @abstractmethod
-    def _get_test_params(cls) -> dict:
-        """
-        Test params should be returned as a dict of tuples,
-        where the first element is the type of the parameter and
-        the second element is the default value, third element is the
-        minimum value and the fourth element is the maximum value.
-        Key is the name of the parameter.
-        """
-        raise NotImplementedError
-
-    @classmethod
     def get_configurable_parameters(cls) -> dict:
-        return {"train": cls._get_train_params(), "test": cls._get_test_params()}
+        return {}
 
     def config_model(self, config: dict) -> None:
         self.config = Config.from_dict(config)

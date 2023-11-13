@@ -179,7 +179,7 @@ class DQN(Algorithm):
 
     # Parameters where everything is None should be provided by translator
     @classmethod
-    def _get_train_params(cls) -> dict:
+    def get_configurable_parameters(cls) -> dict:
         return {
             "n_observations": (ParameterType.INT.name, 1, None, None),
             "n_actions": (ParameterType.INT.name, 1, None, None),
@@ -193,15 +193,6 @@ class DQN(Algorithm):
             "tau": (ParameterType.FLOAT.name, 0.005, 0, 10),
             "lr": (ParameterType.FLOAT.name, 1e-4, 0, 10),
             "use_gpu": (ParameterType.BOOL.name, False, None, None),
-            "seed": (ParameterType.INT.name, None, 0, 100000),
-        }
-
-    # Parameters where everything is None should be provided by translator
-    @classmethod
-    def _get_test_params(cls) -> dict:
-        return {
-            "mode": (ParameterType.STRING.name, None, None, None),
-            "use_gpu": (ParameterType.BOOL.name, True, None, None),
             "seed": (ParameterType.INT.name, None, 0, 100000),
         }
 

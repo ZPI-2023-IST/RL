@@ -14,9 +14,5 @@ class RandomAlgorithm(Algorithm):
         return random.choice(actions)
 
     @classmethod
-    def _get_train_params(cls) -> dict:
-        return {"seed": (ParameterType.INT.name, None, None, None)}
-
-    @classmethod
-    def _get_test_params(cls) -> dict:
+    def get_configurable_parameters(cls) -> dict:
         return {"seed": (ParameterType.INT.name, None, None, None)}
