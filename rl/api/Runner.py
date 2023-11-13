@@ -1,4 +1,5 @@
 import threading
+import time
 import socketio
 import json
 
@@ -14,6 +15,7 @@ class Runner:
         self.algorithm_manager = algorithm_manager
         self.running = False
         self.max_game_len = max_game_len
+        self.start_time = 0
 
         self.run_process = threading.Thread(target=self.run)
         self.sio = None
@@ -41,8 +43,13 @@ class Runner:
         @self.sio.event
         def get_response(message):
             self.data = message
-
+            
+    @property
+    def time(self) -> float:
+        return time.time() - self.start_time if self.running else 0
+    
     def run(self) -> None:
+        self.start_time = time.time()
         self.sio.connect("http://localhost:5002", wait_timeout=10)
         self.sio.emit("make_move", json.dumps({"move": None}))
 

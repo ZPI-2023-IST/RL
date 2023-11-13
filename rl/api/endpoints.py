@@ -42,7 +42,8 @@ def run():
             runner.stop()
         return flask.jsonify({"run": run})
     else:
-        return flask.jsonify({"run": runner.running})
+        print(runner.time)
+        return flask.jsonify({"run": runner.running, "time": runner.time})
 
 
 @app.route("/model", methods=["GET", "PUT"])
@@ -103,6 +104,7 @@ def config():
     """
     if request.method == "PUT":
         data = json.loads(request.data)
+        print(data)
 
         algorithm_name = (
             data.pop("algorithm")
