@@ -181,8 +181,8 @@ class DQN(Algorithm):
     @classmethod
     def get_configurable_parameters(cls) -> dict:
         return {
-            "n_observations": (ParameterType.INT.name, 1, None, None),
-            "n_actions": (ParameterType.INT.name, 1, None, None),
+            "n_observations": (ParameterType.INT.name, 2720, None, None),
+            "n_actions": (ParameterType.INT.name, 376, None, None),
             "mode": (ParameterType.STRING.name, None, None, None),
             "eps_start": (ParameterType.FLOAT.name, 0.9, 0, 10),
             "eps_end": (ParameterType.FLOAT.name, 0.05, 0, 10),
