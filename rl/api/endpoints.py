@@ -41,7 +41,7 @@ def run():
             runner.stop()
         return flask.jsonify({"run": run})
     else:
-        return flask.jsonify({"run": runner.running})  
+        return flask.jsonify({"run": runner.running})
 
 
 @app.route("/model", methods=["GET", "PUT"])
