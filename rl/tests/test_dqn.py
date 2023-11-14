@@ -196,4 +196,5 @@ class TestDQN(unittest.TestCase):
 
         self.assertEqual(self.algorithm.steps_done, n_iterations)
         self.algorithm.restart()
+
         self.assertEqual(self.algorithm.steps_done, 0)

@@ -63,11 +63,13 @@ class Runner:
             reward = self.data["reward"]
             state = self.data["game_board"]
             actions = self.data["moves_vector"]
+            game_status = self.data["state"]
 
             self.data = None
 
             game_step += 1
             if len(actions) == 0 or game_step > self.max_game_len:
+                self.algorithm_manager.algorithm.forward(None, None, reward)
                 self.sio.emit("make_move", json.dumps({"move": None}), namespace="/")
                 game_step = 0
             else:

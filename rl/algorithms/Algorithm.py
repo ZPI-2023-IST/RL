@@ -15,7 +15,7 @@ class Algorithm(ABC):
         self.config_model(config)
 
     @abstractmethod
-    def forward(self, state: list, actions: list, reward: float) -> int:
+    def forward(self, state: list, actions: list, reward: float, game_status: str) -> int:
         """
         This method is called to perform one iteration of model
         """

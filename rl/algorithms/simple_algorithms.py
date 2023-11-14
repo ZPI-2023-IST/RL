@@ -16,9 +16,9 @@ class RandomAlgorithm(Algorithm):
     @classmethod
     def get_configurable_parameters(cls) -> dict:
         return {"seed": Parameter(ParameterType.INT.name, None, 0, 1000, "Random seed")}
-
+    
     def get_model(self):
         return None
-
+    
     def set_params(self, params):
         pass
