@@ -75,6 +75,11 @@ def model():
         )
         return response
     else:
+        if runner.running:
+            response = flask.jsonify({"error": "Stop training/testing before importing model"})
+            response.status_code = 400
+            return response
+        
         data = request.data
         z = zipfile.ZipFile(io.BytesIO(data))
         z.extractall(data_dir)
@@ -103,6 +108,11 @@ def config():
         key2 - bla bla
     """
     if request.method == "PUT":
+        if runner.running:
+            response = flask.jsonify({"error": "Stop training/testing before changing configuration"})
+            response.status_code = 400
+            return response
+        
         data = json.loads(request.data)
         print(data)
 
