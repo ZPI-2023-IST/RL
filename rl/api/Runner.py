@@ -2,10 +2,35 @@ import threading
 import time
 import socketio
 import json
+from enum import Enum
 
 from rl.algorithms.AlgorithmManager import AlgorithmManager
 from rl.logger.Logger import LogType, Logger, LogLevel
 
+
+class State(Enum):
+    ONGOING = 0
+    WON = 1
+    LOST = 2
+
+
+class GameResults:
+    def __init__(self) -> None:
+        self.cur_game_rewards = []
+        self.all_game_rewards_sum = []
+        self.no_won_games = 0
+        self.no_lost_games = 0
+
+    def store_game_results(self, reward, game_status, is_end_game):
+        self.cur_game_rewards.append(reward)
+        if is_end_game:
+            self.all_game_rewards_sum.append(sum(self.cur_game_rewards))
+            self.cur_game_rewards = []
+
+            if game_status == State.WON:
+                self.no_won_games += 1
+            else:
+                self.no_lost_games += 1
 
 class Runner:
     def __init__(
@@ -20,6 +45,7 @@ class Runner:
         self.run_process = threading.Thread(target=self.run)
         self.sio = None
         self.data = None
+        self.game_results = GameResults()
 
         self._mount_socketio()
 
@@ -70,10 +96,12 @@ class Runner:
             game_step += 1
             if len(actions) == 0 or game_step > self.max_game_len:
                 self.algorithm_manager.algorithm.forward(None, None, reward)
+                self.game_results.store_game_results(reward, game_status, True)
                 self.sio.emit("make_move", json.dumps({"move": None}), namespace="/")
                 game_step = 0
             else:
                 move = self.algorithm_manager.algorithm.forward(state, actions, reward)
+                self.game_results.store_game_results(reward, game_status, False)
                 self.sio.emit("make_move", json.dumps({"move": move}), namespace="/")
 
         self.sio.disconnect()
