@@ -49,8 +49,9 @@ class DQN(Algorithm):
         self.action_m = None
 
     def forward(self, state: list, actions: list, reward: float) -> int:
-        self._store_memory(state, reward)
-        self._optimize_model()
+        if self.config.mode == States.TRAIN.value:
+            self._store_memory(state, reward)
+            self._optimize_model()
         chosen_action = self._make_action(state, actions)
         return chosen_action
 
