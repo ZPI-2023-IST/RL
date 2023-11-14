@@ -17,20 +17,37 @@ class State(Enum):
 class GameResults:
     def __init__(self) -> None:
         self.cur_game_rewards = []
-        self.all_game_rewards_sum = []
+        self.all_game_rewards_sum = {}
+        self.no_games_played = 0
         self.no_won_games = 0
         self.no_lost_games = 0
+        self.no_timeouts = 0
 
     def store_game_results(self, reward, game_status, is_end_game):
         self.cur_game_rewards.append(reward)
         if is_end_game:
-            self.all_game_rewards_sum.append(sum(self.cur_game_rewards))
-            self.cur_game_rewards = []
-
-            if game_status == State.WON:
+            self.no_games_played += 1
+            if game_status == State.WON.__str__():
                 self.no_won_games += 1
-            else:
+            elif game_status == State.LOST.__str__():
                 self.no_lost_games += 1
+            elif game_status == State.ONGOING.__str__():
+                self.no_timeouts += 1
+            else:
+                raise Exception("Unknown status")
+
+            self.all_game_rewards_sum[self.no_games_played] = sum(self.cur_game_rewards)
+            self.cur_game_rewards = []
+            
+    def __str__(self) -> str:
+        text = "Game Results\n"
+        text += f"Current game rewards: {self.cur_game_rewards}\n"
+        text += f"All game rewards sum: {self.all_game_rewards_sum}\n"
+        text += f"No games played: {self.no_games_played}\n"
+        text += f"No won games: {self.no_won_games}\n"
+        text += f"No lost games: {self.no_lost_games}\n"
+        text += f"No timeouts: {self.no_timeouts}\n"
+        return text
 
 class Runner:
     def __init__(
@@ -92,16 +109,21 @@ class Runner:
             game_status = self.data["state"]
 
             self.data = None
-
             game_step += 1
             if len(actions) == 0 or game_step > self.max_game_len:
-                self.algorithm_manager.algorithm.forward(None, None, reward)
+                print(self.game_results)
+                if game_status == State.ONGOING.__str__():
+                    self.algorithm_manager.algorithm.forward(state, actions, reward)
+                else:
+                    self.algorithm_manager.algorithm.forward(None, None, reward)
                 self.game_results.store_game_results(reward, game_status, True)
+
                 self.sio.emit("make_move", json.dumps({"move": None}), namespace="/")
                 game_step = 0
             else:
                 move = self.algorithm_manager.algorithm.forward(state, actions, reward)
                 self.game_results.store_game_results(reward, game_status, False)
+                
                 self.sio.emit("make_move", json.dumps({"move": move}), namespace="/")
 
         self.sio.disconnect()
