@@ -18,6 +18,8 @@ setuptools.setup(
         "flask==3.0.0",
         "numpy==1.26.1",
         "torch==2.1.0",
+        "flask-cors",
+        "python-socketio==5.4.0",
+        "python-socketio[client]",
     ]
 )
-

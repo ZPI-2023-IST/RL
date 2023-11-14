@@ -1,8 +1,15 @@
+import io
 import json
+import os
+import pathlib
+import shutil
+import zipfile
 
 from flask import request
+import flask
+import torch
 
-from rl.api import logger, app, algorithm_manager
+from rl.api import logger, app, algorithm_manager, runner
 from rl.logger.Logger import LogType
 
 
@@ -16,15 +23,82 @@ def get_logs():
     some_filter = request.args.get("filter")
     if some_filter:
         print(f"filtering with {some_filter}")
-    return {"logs": logs}
+    response = flask.jsonify({"logs": logs})
+    return response
 
 
-@app.route("/model")
-def get_model():
+@app.route("/run", methods=["GET", "PUT"])
+def run():
+    """
+    Endpoint allows for starting and stopping training/testing process.
+    """
+    if request.method == "PUT":
+        data = json.loads(request.data)
+        run = data["run"]
+        if run:
+            algorithm_manager.algorithm.config.mode = data["mode"]
+            runner.start()
+        else:
+            runner.stop()
+        return flask.jsonify({"run": run})
+    else:
+        print(runner.time)
+        return flask.jsonify({"run": runner.running, "time": runner.time})
+
+
+@app.route("/model", methods=["GET", "PUT"])
+def model():
     """
     Enpoint allows downloading model from RL module.
     """
-    return {"model": "..."}
+    data_dir = pathlib.Path("data")
+    model_dir = data_dir / "model"
+    config_name = "config.json"
+    params_name = "params.pt"
+    zip_name = "params"
+    os.makedirs(model_dir, exist_ok=True)
+
+    if request.method == "GET":
+        config = algorithm_manager.algorithm.config.as_dict()
+        config["algorithm"] = algorithm_manager.algorithm_name
+
+        with open(model_dir / config_name, "w") as f:
+            json.dump(config, f)
+
+        model = algorithm_manager.algorithm.get_model()
+        if model:
+            torch.save(model.state_dict(), model_dir / params_name)
+
+        shutil.make_archive(data_dir / zip_name, "zip", model_dir)
+        response = flask.send_file(
+            pathlib.Path(f"../{data_dir / zip_name}.zip"), as_attachment=True
+        )
+        return response
+    else:
+        if runner.running:
+            response = flask.jsonify(
+                {"error": "Stop training/testing before importing model"}
+            )
+            response.status_code = 400
+            return response
+
+        data = request.data
+        z = zipfile.ZipFile(io.BytesIO(data))
+        z.extractall(data_dir)
+        with open(data_dir / config_name, "r") as f:
+            config = json.load(f)
+            algorithm_manager.set_algorithm(config.pop("algorithm"))
+            algorithm_manager.configure_algorithm(config)
+
+        if os.path.isfile(data_dir / params_name):
+            params = torch.load(data_dir / params_name)
+            algorithm_manager.algorithm.set_params(params)
+
+        logger.info(
+            f"Imported model",
+            LogType.CONFIG,
+        )
+        return flask.jsonify({"success": "success"})
 
 
 @app.route("/config", methods=["GET", "PUT"])
@@ -36,7 +110,15 @@ def config():
         key2 - bla bla
     """
     if request.method == "PUT":
+        if runner.running:
+            response = flask.jsonify(
+                {"error": "Stop training/testing before changing configuration"}
+            )
+            response.status_code = 400
+            return response
+
         data = json.loads(request.data)
+        print(data)
 
         algorithm_name = (
             data.pop("algorithm")
@@ -45,21 +127,14 @@ def config():
         )
         algorithm_manager.set_algorithm(algorithm_name)
         algorithm_manager.configure_algorithm(data)
-
-        logger.info(
-            f"Configured algorithm {algorithm_name}",
-            LogType.CONFIG,
-        )
-        logger.info(
-            f"New config: {algorithm_manager.algorithm.config.as_dict()}",
-            LogType.CONFIG,
-        )
-
-        return json.dumps(algorithm_manager.algorithm.config.as_dict())
+        response_data = algorithm_manager.algorithm.config.as_dict()
+        response = flask.jsonify(response_data)
+        return response
     else:
         data = algorithm_manager.algorithm.config.as_dict()
         data["algorithm"] = algorithm_manager.algorithm_name
-        return json.dumps(data)
+        response = flask.jsonify(data)
+        return response
 
 
 @app.route("/config-params")
@@ -72,24 +147,5 @@ def get_configurable_parameters():
     params = {}
     for algorithm_name, algorithm in algorithm_manager.registered_algorithms.items():
         params[algorithm_name] = algorithm.get_configurable_parameters()
-    return params
-
-
-@app.route("/action", methods=["PUT"])
-def action():
-    """
-    Endpoint allows for getting an action from model, based
-    on game state. According to mode, there may run some training
-    process. Required keys in request (types are probably going to
-    change):
-        state: List[float] - game state
-        moves: List[List[Int]] - allowed moves
-        reward: float - reward for previous action
-    """
-    data = json.loads(request.data)
-    state = data["state"]
-    moves = data["moves"]
-    reward = data["reward"]
-
-    chosen_action = algorithm_manager.algorithm.forward(state, moves, reward)
-    return {"action": chosen_action}
+    response = flask.jsonify(params)
+    return response

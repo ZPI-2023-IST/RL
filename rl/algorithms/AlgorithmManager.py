@@ -1,3 +1,6 @@
+from rl.logger.Logger import LogType
+
+
 class AlgorithmManager:
     DEFAULT_ALGORITHM = "random"
 
@@ -18,9 +21,17 @@ class AlgorithmManager:
         algorithm_class = self.registered_algorithms[algorithm_name]
         self.algorithm = algorithm_class(self.logger, *args, **kwargs)
         self.algorithm_name = algorithm_name
+        self.logger.info(
+            f"Setting algorithm to {algorithm_name}",
+            LogType.CONFIG,
+        )
 
     def configure_algorithm(self, config: dict) -> None:
         self.algorithm.config_model(config)
+        self.logger.info(
+            f"New config: {self.algorithm.config.as_dict()}",
+            LogType.CONFIG,
+        )
 
     def register_algorithm(self, name: str):
         def decorator(cls):

@@ -1,6 +1,6 @@
 import unittest
 
-from rl.algorithms import algorithm_manager, Algorithm
+from rl.algorithms import algorithm_manager, Algorithm, Parameter, ParameterType
 
 
 class TestAlgorithmManager(unittest.TestCase):
@@ -26,12 +26,20 @@ class TestAlgorithmManager(unittest.TestCase):
                 pass
 
             @classmethod
-            def _get_train_params(cls):
-                return {}
+            def get_configurable_parameters(cls) -> dict:
+                return {"a": Parameter(
+                    ParameterType.FLOAT,
+                    1,
+                    1,
+                    1,
+                    "TEST"
+                )}
 
-            @classmethod
-            def _get_test_params(cls):
-                return {}
+            def get_model(self) -> object:
+                pass
+
+            def set_params(self, params) -> object:
+                pass
 
         algorithm_manager.set_algorithm("TestAlgorithm")
         self.assertTrue(isinstance(algorithm_manager.algorithm, TestAlgorithm))
