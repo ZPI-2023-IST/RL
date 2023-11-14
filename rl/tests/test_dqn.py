@@ -168,3 +168,18 @@ class TestDQN(unittest.TestCase):
             self.algorithm.config_model(config)
             action = self.algorithm._make_action(state, actions)
             self.assertEqual(0, action)
+
+    def test_no_moves(self):
+        state = None
+        actions = None
+
+        config = {
+            k: v[1] for k, v in DQN.get_configurable_parameters()["train"].items()
+        }
+        config["n_observations"] = 2
+        config["hidden_layers"] = "16,16,16"
+        config["n_actions"] = 2
+
+        self.algorithm.config_model(config)
+        action = self.algorithm.forward(state, actions, 10)
+        self.assertIs(None, action)

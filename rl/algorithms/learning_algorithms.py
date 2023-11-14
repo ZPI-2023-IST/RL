@@ -52,8 +52,12 @@ class DQN(Algorithm):
         if self.config.mode == States.TRAIN.value:
             self._store_memory(state, reward)
             self._optimize_model()
-        chosen_action = self._make_action(state, actions)
-        return chosen_action
+
+        if actions is not None:
+            chosen_action = self._make_action(state, actions)
+            return chosen_action
+        else:
+            return None
 
     def _make_action(self, state: list, actions: list[list]) -> list:
         self.state_m = torch.tensor(
