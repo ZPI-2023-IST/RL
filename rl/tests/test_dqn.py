@@ -96,8 +96,6 @@ class TestDQN(unittest.TestCase):
         n_iterations = 1000
         state = [0, 1]
         actions = [0, 1]
-        next_state = [1, 0]
-        reward = None
 
         config = {
             k: v[1] for k, v in DQN.get_configurable_parameters()["train"].items()
@@ -112,11 +110,7 @@ class TestDQN(unittest.TestCase):
         policy_net_state_dict = copy.deepcopy(self.algorithm.policy_net.state_dict())
 
         for _ in range(n_iterations):
-            self.algorithm._store_memory(next_state, reward)
-            self.algorithm._optimize_model()
-            action = self.algorithm._make_action(state, actions)
-
-            reward = 1 if action == 0 else -1
+            self.algorithm.forward(state, actions, 10)
 
         # Weights should update in some way
         self.assertFalse(
@@ -139,11 +133,7 @@ class TestDQN(unittest.TestCase):
         policy_net_state_dict = copy.deepcopy(self.algorithm.policy_net.state_dict())
 
         for _ in range(n_iterations):
-            self.algorithm._store_memory(next_state, reward)
-            self.algorithm._optimize_model()
-            action = self.algorithm._make_action(state, actions)
-
-            reward = 1 if action == 0 else -1
+            self.algorithm.forward(state, actions, 10)
 
         # Weights should not update in test mode
         self.assertTrue(
