@@ -1,3 +1,6 @@
+# File with model data
+rl/data
+
 __pycache__/
 *.py[cod]
 *$py.class
