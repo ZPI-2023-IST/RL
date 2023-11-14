@@ -114,76 +114,75 @@ class DQN(Algorithm):
             )
 
     def _optimize_model(self):
-        if self.config.mode == States.TRAIN.value:
-            if len(self.memory) < self.config.batch_size:
-                return
+        if len(self.memory) < self.config.batch_size:
+            return
 
-            transitions = self.memory.sample()
-            batch = Transition(*zip(*transitions))
+        transitions = self.memory.sample()
+        batch = Transition(*zip(*transitions))
 
-            # Compute a mask of non-final states and concatenate the batch elements
-            # (a final state would've been the one after which simulation ended)
-            non_final_mask = torch.tensor(
-                tuple(map(lambda s: s is not None, batch.next_state)),
-                device=self.device,
-                dtype=torch.bool,
-            )
-            non_final_next_states = torch.cat(
-                [s for s in batch.next_state if s is not None]
-            )
+        # Compute a mask of non-final states and concatenate the batch elements
+        # (a final state would've been the one after which simulation ended)
+        non_final_mask = torch.tensor(
+            tuple(map(lambda s: s is not None, batch.next_state)),
+            device=self.device,
+            dtype=torch.bool,
+        )
+        non_final_next_states = torch.cat(
+            [s for s in batch.next_state if s is not None]
+        )
 
-            state_batch = torch.cat(batch.state)
-            action_batch = torch.cat(batch.action)
-            reward_batch = torch.cat(batch.reward)
+        state_batch = torch.cat(batch.state)
+        action_batch = torch.cat(batch.action)
+        reward_batch = torch.cat(batch.reward)
 
-            # Note - here the net can give improper moves because it will later be punished for it
-            # Compute actions which would've been taken for each batch state according to policy net
-            state_action_values = self.policy_net(state_batch).gather(1, action_batch)
+        # Note - here the net can give improper moves because it will later be punished for it
+        # Compute actions which would've been taken for each batch state according to policy net
+        state_action_values = self.policy_net(state_batch).gather(1, action_batch)
 
-            # Note - here the net can give improper moves because it will later be punished for it
-            # Compute V(s_{t+1}) for all next states.
-            next_state_values = torch.zeros(self.config.batch_size, device=self.device)
-            with torch.no_grad():
-                next_state_values[non_final_mask] = self.target_net(
-                    non_final_next_states
-                ).max(1)[0]
+        # Note - here the net can give improper moves because it will later be punished for it
+        # Compute V(s_{t+1}) for all next states.
+        next_state_values = torch.zeros(self.config.batch_size, device=self.device)
+        with torch.no_grad():
+            next_state_values[non_final_mask] = self.target_net(
+                non_final_next_states
+            ).max(1)[0]
 
-            # Compute the expected Q values
-            expected_state_action_values = (
-                next_state_values * self.config.gamma
-            ) + reward_batch
+        # Compute the expected Q values
+        expected_state_action_values = (
+            next_state_values * self.config.gamma
+        ) + reward_batch
 
-            # Compute loss
-            criterion = nn.SmoothL1Loss()
-            # We do repeat to avoid warning message
-            loss = criterion(
-                state_action_values, expected_state_action_values.unsqueeze(1)
-            )
+        # Compute loss
+        criterion = nn.SmoothL1Loss()
+        # We do repeat to avoid warning message
+        loss = criterion(
+            state_action_values, expected_state_action_values.unsqueeze(1)
+        )
 
-            # Optimize the model
-            self.optimizer.zero_grad()
-            loss.backward()
+        # Optimize the model
+        self.optimizer.zero_grad()
+        loss.backward()
 
-            # Gradient clipping
-            torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
-            self.optimizer.step()
+        # Gradient clipping
+        torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
+        self.optimizer.step()
 
-            # Soft update of the target network's weights
-            target_net_state_dict = self.target_net.state_dict()
-            policy_net_state_dict = self.policy_net.state_dict()
-            for key in policy_net_state_dict:
-                target_net_state_dict[key] = policy_net_state_dict[
-                    key
-                ] * self.config.tau + target_net_state_dict[key] * (1 - self.config.tau)
-            self.target_net.load_state_dict(target_net_state_dict)
+        # Soft update of the target network's weights
+        target_net_state_dict = self.target_net.state_dict()
+        policy_net_state_dict = self.policy_net.state_dict()
+        for key in policy_net_state_dict:
+            target_net_state_dict[key] = policy_net_state_dict[
+                key
+            ] * self.config.tau + target_net_state_dict[key] * (1 - self.config.tau)
+        self.target_net.load_state_dict(target_net_state_dict)
 
-    # Parameters where everything is None should be provided by translator
     @classmethod
     def _get_train_params(cls) -> dict:
         return {
-            "n_observations": (ParameterType.INT.name, None, None, None),
-            "n_actions": (ParameterType.INT.name, None, None, None),
-            "mode": (ParameterType.STRING.name, None, None, None),
+            "n_observations": (ParameterType.INT.name, 2720, 1, 100000),
+            "n_actions": (ParameterType.INT.name, 108, 1, 100000),
+            "hidden_layers": (ParameterType.STRING.name, "1024,256", None, None),
+            "mode": (ParameterType.STRING.name, States.TRAIN.value, None, None),
             "eps_start": (ParameterType.FLOAT.name, 0.9, 0, 10),
             "eps_end": (ParameterType.FLOAT.name, 0.05, 0, 10),
             "eps_decay": (ParameterType.FLOAT.name, 1000, 0, 10000),
@@ -193,15 +192,14 @@ class DQN(Algorithm):
             "tau": (ParameterType.FLOAT.name, 0.005, 0, 10),
             "lr": (ParameterType.FLOAT.name, 1e-4, 0, 10),
             "use_gpu": (ParameterType.BOOL.name, False, None, None),
-            "seed": (ParameterType.INT.name, 1001, 0, 100000),
+            "seed": (ParameterType.INT.name, 1001, 0, 100000)
         }
 
-    # Parameters where everything is None should be provided by translator
     @classmethod
     def _get_test_params(cls) -> dict:
         return {
-            "mode": (ParameterType.STRING.name, None, None, None),
-            "use_gpu": (ParameterType.BOOL.name, True, None, None),
+            "mode": (ParameterType.STRING.name, States.TEST.value, None, None),
+            "use_gpu": (ParameterType.BOOL.name, True, None, None)
         }
 
     def config_model(self, config: dict) -> None:
@@ -214,14 +212,19 @@ class DQN(Algorithm):
         )
 
         # Model setup
+        hidden_layers_list = map(int, self.config.hidden_layers.split(","))
+        layers = [self.config.n_observations]
+        layers.extend(hidden_layers_list)
+        layers.append(self.config.n_actions)
+
         random.seed(self.config.seed)
         torch.manual_seed(self.config.seed)
         self.memory = ReplayMemory(self.config.memory_size, self.config.batch_size)
         self.policy_net = SimpleNet(
-            [self.config.n_observations, 20, self.config.n_actions]
+            layers
         ).to(self.device)
         self.target_net = SimpleNet(
-            [self.config.n_observations, 20, self.config.n_actions]
+            layers
         ).to(self.device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
 

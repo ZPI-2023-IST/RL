@@ -3,7 +3,7 @@ import copy
 
 import torch
 
-from rl.algorithms import DQN
+from rl.algorithms import DQN, States
 from rl.logger.Logger import Logger
 
 
@@ -24,8 +24,8 @@ class TestDQN(unittest.TestCase):
             k: v[1] for k, v in DQN.get_configurable_parameters()["train"].items()
         }
         config["n_observations"] = 2
+        config["hidden_layers"] = "16,16"
         config["n_actions"] = 2
-        config["mode"] = "train"
         config["eps_start"] = -10
         config["eps_end"] = 10
         self.algorithm.config_model(config)
@@ -52,8 +52,8 @@ class TestDQN(unittest.TestCase):
             k: v[1] for k, v in DQN.get_configurable_parameters()["train"].items()
         }
         config["n_observations"] = 2
+        config["hidden_layers"] = "32,32"
         config["n_actions"] = 2
-        config["mode"] = "train"
         self.algorithm.config_model(config)
         # We need to have something to store in the memory
         self.algorithm._make_action(state, actions)
@@ -103,8 +103,8 @@ class TestDQN(unittest.TestCase):
             k: v[1] for k, v in DQN.get_configurable_parameters()["train"].items()
         }
         config["n_observations"] = 2
+        config["hidden_layers"] = "16,16"
         config["n_actions"] = 2
-        config["mode"] = "train"
         config["lr"] = 1e-2
         self.algorithm.config_model(config)
 
@@ -132,7 +132,7 @@ class TestDQN(unittest.TestCase):
             )
         )
 
-        config["mode"] = "test"
+        config["mode"] = States.TEST.value
         self.algorithm.config_model(config)
 
         target_net_state_dict = copy.deepcopy(self.algorithm.target_net.state_dict())
@@ -167,8 +167,8 @@ class TestDQN(unittest.TestCase):
             k: v[1] for k, v in DQN.get_configurable_parameters()["train"].items()
         }
         config["n_observations"] = 2
+        config["hidden_layers"] = "16,16,16"
         config["n_actions"] = 2
-        config["mode"] = "train"
 
         # Because we cannot force model to choose illegal action
         # We test if on 100 seeds we will get the same output. It's highly unlikely that
