@@ -45,3 +45,9 @@ class Algorithm(ABC):
 
     def config_model(self, config: dict) -> None:
         self.config = Config.from_dict(config)
+
+    def restart(self) -> None:
+        """
+        Restart the model (this is not the same as again initialization)
+        """
+        pass

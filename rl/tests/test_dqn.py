@@ -183,3 +183,27 @@ class TestDQN(unittest.TestCase):
         self.algorithm.config_model(config)
         action = self.algorithm.forward(state, actions, 10)
         self.assertIs(None, action)
+
+    def test_restart(self):
+        n_iterations = 10
+        state = [0, 1]
+        actions = [0, 1]
+
+        # Force to go the first way of select_action
+        config = {
+            k: v[1] for k, v in DQN.get_configurable_parameters()["train"].items()
+        }
+        config["n_observations"] = 2
+        config["n_actions"] = 2
+
+        self.algorithm.config_model(config)
+        for _ in range(n_iterations):
+            self.algorithm.forward(state, actions, -1)
+
+        self.assertEqual(self.algorithm.steps_done, n_iterations)
+        self.assertEqual(len(self.algorithm.memory), n_iterations-1)
+
+        self.algorithm.restart()
+
+        self.assertEqual(self.algorithm.steps_done, 0)
+        self.assertEqual(len(self.algorithm.memory), 0)

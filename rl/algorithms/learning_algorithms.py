@@ -236,6 +236,12 @@ class DQN(Algorithm):
         self.state_m = None
         self.action_m = None
 
+    def restart(self):
+        self.steps_done = 0
+        self.memory = ReplayMemory(self.config.memory_size, self.config.batch_size)
+        self.state_m = None
+        self.action_m = None
+
     # Remove invalid moves by setting all invalid moves to 0
     def _remove_invalid_moves(self, action_probs, actions):
         for act in range(self.config.n_actions):
