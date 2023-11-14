@@ -19,7 +19,7 @@ class Runner:
 
         self.run_process = threading.Thread(target=self.run)
         self.sio = None
-        self.data = {}
+        self.data = None
 
         self._mount_socketio()
 
@@ -50,8 +50,8 @@ class Runner:
     
     def run(self) -> None:
         self.start_time = time.time()
-        self.sio.connect("http://localhost:5002", wait_timeout=10)
-        self.sio.emit("make_move", json.dumps({"move": None}))
+        self.sio.connect("http://localhost:5002", wait_timeout=10, namespaces=["/"])
+        self.sio.emit("make_move", json.dumps({"move": None}), namespace="/")
 
         move = None
         game_step = 0
@@ -68,12 +68,14 @@ class Runner:
 
             game_step += 1
             if len(actions) == 0 or game_step > self.max_game_len:
-                self.sio.emit("make_move", json.dumps({"move": None}))
+                self.sio.emit("make_move", json.dumps({"move": None}), namespace="/")
                 game_step = 0
             else:
                 move = self.algorithm_manager.algorithm.forward(state, actions, reward)
-                self.sio.emit("make_move", json.dumps({"move": move}))
-
+                self.sio.emit("make_move", json.dumps({"move": move}), namespace="/")
+        
+        self.sio.disconnect()
+    
     def start(self) -> None:
         if self.running:
             return
@@ -94,6 +96,7 @@ class Runner:
             LogType.TRAIN if mode == "train" else LogType.TEST,
         )
         self.running = False
+        self.data = None
         self.run_process.join()
-        self.sio.disconnect()
+        
         self.run_process = threading.Thread(target=self.run)
