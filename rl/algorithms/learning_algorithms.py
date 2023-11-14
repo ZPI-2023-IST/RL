@@ -160,9 +160,7 @@ class DQN(Algorithm):
         # Compute loss
         criterion = nn.SmoothL1Loss()
         # We do repeat to avoid warning message
-        loss = criterion(
-            state_action_values, expected_state_action_values.unsqueeze(1)
-        )
+        loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
 
         # Optimize the model
         self.optimizer.zero_grad()
@@ -197,14 +195,14 @@ class DQN(Algorithm):
             "tau": (ParameterType.FLOAT.name, 0.005, 0, 10),
             "lr": (ParameterType.FLOAT.name, 1e-4, 0, 10),
             "use_gpu": (ParameterType.BOOL.name, False, None, None),
-            "seed": (ParameterType.INT.name, 1001, 0, 100000)
+            "seed": (ParameterType.INT.name, 1001, 0, 100000),
         }
 
     @classmethod
     def _get_test_params(cls) -> dict:
         return {
             "mode": (ParameterType.STRING.name, States.TEST.value, None, None),
-            "use_gpu": (ParameterType.BOOL.name, True, None, None)
+            "use_gpu": (ParameterType.BOOL.name, True, None, None),
         }
 
     def config_model(self, config: dict) -> None:
@@ -225,12 +223,8 @@ class DQN(Algorithm):
         random.seed(self.config.seed)
         torch.manual_seed(self.config.seed)
         self.memory = ReplayMemory(self.config.memory_size, self.config.batch_size)
-        self.policy_net = SimpleNet(
-            layers
-        ).to(self.device)
-        self.target_net = SimpleNet(
-            layers
-        ).to(self.device)
+        self.policy_net = SimpleNet(layers).to(self.device)
+        self.target_net = SimpleNet(layers).to(self.device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
 
         # Optimizer setup
