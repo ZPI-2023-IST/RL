@@ -61,7 +61,7 @@ def model():
     if request.method == "GET":
         config = algorithm_manager.algorithm.config.as_dict()
         config["algorithm"] = algorithm_manager.algorithm_name
-        
+
         print(config)
 
         with open(model_dir / config_name, "w") as f:
@@ -73,9 +73,7 @@ def model():
 
         shutil.make_archive(data_dir / zip_name, "zip", model_dir)
         abs_path = pathlib.Path(data_dir / zip_name).resolve()
-        response = flask.send_file(
-            f"{abs_path}.zip", as_attachment=True
-        )
+        response = flask.send_file(f"{abs_path}.zip", as_attachment=True)
         return response
     else:
         if runner.running:
@@ -147,14 +145,16 @@ def config():
         return response
     else:
         data = algorithm_manager.algorithm.config.as_dict()
-        if "mode" in data.keys():
-            data.pop("mode")
-        
+
         if request.args.get("modifiable"):
             data = {
                 k: v
                 for k, v in data.items()
-                if k != "algorithm" and algorithm_manager.algorithm.get_configurable_parameters()[k].modifiable
+                if k != "algorithm"
+                and k != "mode"
+                and algorithm_manager.algorithm.get_configurable_parameters()[
+                    k
+                ].modifiable
             }
         data["algorithm"] = algorithm_manager.algorithm_name
         response = flask.jsonify(data)
