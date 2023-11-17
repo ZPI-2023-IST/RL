@@ -187,9 +187,15 @@ class DQN(Algorithm):
                 0,
                 None,
                 "Number of observations in the state",
+                False,
             ),
             "n_actions": Parameter(
-                ParameterType.INT.name, 376, 0, None, "Number of actions in the state"
+                ParameterType.INT.name,
+                376,
+                0,
+                None,
+                "Number of actions in the state",
+                False,
             ),
             "eps_start": Parameter(
                 ParameterType.FLOAT.name,
@@ -197,6 +203,7 @@ class DQN(Algorithm):
                 0,
                 1,
                 "Probability of choosing random action at the beginning",
+                True,
             ),
             "eps_end": Parameter(
                 ParameterType.FLOAT.name,
@@ -204,6 +211,7 @@ class DQN(Algorithm):
                 0,
                 1,
                 "Probability of choosing random action at the end",
+                True,
             ),
             "eps_decay": Parameter(
                 ParameterType.FLOAT.name,
@@ -211,6 +219,7 @@ class DQN(Algorithm):
                 0,
                 None,
                 "Number of steps over which eps is linearly annealed",
+                True,
             ),
             "memory_size": Parameter(
                 ParameterType.INT.name,
@@ -218,6 +227,7 @@ class DQN(Algorithm):
                 1,
                 None,
                 "Number of transitions stored in memory",
+                True,
             ),
             "batch_size": Parameter(
                 ParameterType.INT.name,
@@ -225,6 +235,7 @@ class DQN(Algorithm):
                 1,
                 2048,
                 "Number of transitions used for training in one batch",
+                True,
             ),
             "gamma": Parameter(
                 ParameterType.FLOAT.name,
@@ -232,6 +243,7 @@ class DQN(Algorithm):
                 0,
                 1,
                 "Discount factor for future rewards",
+                True,
             ),
             "tau": Parameter(
                 ParameterType.FLOAT.name,
@@ -239,6 +251,7 @@ class DQN(Algorithm):
                 0,
                 1,
                 "Soft update of target network's weights",
+                True,
             ),
             "lr": Parameter(
                 ParameterType.FLOAT.name,
@@ -246,6 +259,7 @@ class DQN(Algorithm):
                 0,
                 None,
                 "Learning rate for Adam optimizer",
+                True,
             ),
             "use_gpu": Parameter(
                 ParameterType.BOOL.name,
@@ -253,6 +267,7 @@ class DQN(Algorithm):
                 None,
                 None,
                 "Whether to use GPU for training",
+                True,
             ),
             "seed": Parameter(
                 ParameterType.INT.name,
@@ -260,6 +275,7 @@ class DQN(Algorithm):
                 0,
                 None,
                 "Random seed for reproducibility",
+                True,
             ),
         }
 
@@ -304,7 +320,7 @@ class DQN(Algorithm):
 
     def get_model(self):
         return self.policy_net
-    
+
     def set_params(self, params):
         self.policy_net.load_state_dict(params)
         self.target_net.load_state_dict(params)

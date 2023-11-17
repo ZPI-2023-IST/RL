@@ -3,7 +3,9 @@ from collections import namedtuple
 
 from rl.algorithms.Config import Config
 
-Parameter = namedtuple("Parameter", ("type", "default", "min", "max", "help"))
+Parameter = namedtuple(
+    "Parameter", ("type", "default", "min", "max", "help", "modifiable")
+)
 
 
 class Algorithm(ABC):
@@ -25,14 +27,18 @@ class Algorithm(ABC):
     @abstractmethod
     def get_configurable_parameters(cls) -> dict:
         pass
-    
+
     @abstractmethod
     def get_model(self) -> object:
         pass
-    
+
     @abstractmethod
     def set_params(self, params) -> object:
         pass
 
     def config_model(self, config: dict) -> None:
+        print(config)
         self.config = Config.from_dict(config)
+
+    def update_config(self, config: dict) -> None:
+        self.config.update(config)

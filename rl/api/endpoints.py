@@ -61,25 +61,30 @@ def model():
     if request.method == "GET":
         config = algorithm_manager.algorithm.config.as_dict()
         config["algorithm"] = algorithm_manager.algorithm_name
+        
+        print(config)
 
         with open(model_dir / config_name, "w") as f:
             json.dump(config, f)
-            
+
         model = algorithm_manager.algorithm.get_model()
         if model:
             torch.save(model.state_dict(), model_dir / params_name)
 
         shutil.make_archive(data_dir / zip_name, "zip", model_dir)
+        abs_path = pathlib.Path(data_dir / zip_name).resolve()
         response = flask.send_file(
-            pathlib.Path(f"../{data_dir / zip_name}.zip"), as_attachment=True
+            f"{abs_path}.zip", as_attachment=True
         )
         return response
     else:
         if runner.running:
-            response = flask.jsonify({"error": "Stop training/testing before importing model"})
+            response = flask.jsonify(
+                {"error": "Stop training/testing before importing model"}
+            )
             response.status_code = 400
             return response
-        
+
         data = request.data
         z = zipfile.ZipFile(io.BytesIO(data))
         z.extractall(data_dir)
@@ -87,11 +92,11 @@ def model():
             config = json.load(f)
             algorithm_manager.set_algorithm(config.pop("algorithm"))
             algorithm_manager.configure_algorithm(config)
-        
+
         if os.path.isfile(data_dir / params_name):
             params = torch.load(data_dir / params_name)
             algorithm_manager.algorithm.set_params(params)
-        
+
         logger.info(
             f"Imported model",
             LogType.CONFIG,
@@ -99,7 +104,7 @@ def model():
         return flask.jsonify({"success": "success"})
 
 
-@app.route("/config", methods=["GET", "PUT"])
+@app.route("/config", methods=["GET", "PUT", "POST"])
 def config():
     """
     Endpoint allows for GETtin curent configuration and PUTting
@@ -109,12 +114,26 @@ def config():
     """
     if request.method == "PUT":
         if runner.running:
-            response = flask.jsonify({"error": "Stop training/testing before changing configuration"})
+            response = flask.jsonify(
+                {"error": "Stop training/testing before changing configuration"}
+            )
             response.status_code = 400
             return response
-        
+
         data = json.loads(request.data)
-        print(data)
+        algorithm_manager.update_config(data)
+        response_data = algorithm_manager.algorithm.config.as_dict()
+        response = flask.jsonify(response_data)
+        return response
+    elif request.method == "POST":
+        if runner.running:
+            response = flask.jsonify(
+                {"error": "Stop training/testing before changing configuration"}
+            )
+            response.status_code = 400
+            return response
+
+        data = json.loads(request.data)
 
         algorithm_name = (
             data.pop("algorithm")
@@ -128,6 +147,15 @@ def config():
         return response
     else:
         data = algorithm_manager.algorithm.config.as_dict()
+        if "mode" in data.keys():
+            data.pop("mode")
+        
+        if request.args.get("modifiable"):
+            data = {
+                k: v
+                for k, v in data.items()
+                if k != "algorithm" and algorithm_manager.algorithm.get_configurable_parameters()[k].modifiable
+            }
         data["algorithm"] = algorithm_manager.algorithm_name
         response = flask.jsonify(data)
         return response
@@ -141,7 +169,23 @@ def get_configurable_parameters():
     algoritm.
     """
     params = {}
-    for algorithm_name, algorithm in algorithm_manager.registered_algorithms.items():
-        params[algorithm_name] = algorithm.get_configurable_parameters()
+
+    if request.args.get("modifiable"):
+        for (
+            algorithm_name,
+            algorithm,
+        ) in algorithm_manager.registered_algorithms.items():
+            params[algorithm_name] = {
+                k: v
+                for k, v in algorithm.get_configurable_parameters().items()
+                if v.modifiable
+            }
+    else:
+        for (
+            algorithm_name,
+            algorithm,
+        ) in algorithm_manager.registered_algorithms.items():
+            params[algorithm_name] = algorithm.get_configurable_parameters()
+
     response = flask.jsonify(params)
     return response

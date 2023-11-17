@@ -43,11 +43,11 @@ class Runner:
         @self.sio.event
         def get_response(message):
             self.data = message
-            
+
     @property
     def time(self) -> float:
         return time.time() - self.start_time if self.running else 0
-    
+
     def run(self) -> None:
         self.start_time = time.time()
         self.sio.connect("http://localhost:5002", wait_timeout=10, namespaces=["/"])
@@ -73,9 +73,9 @@ class Runner:
             else:
                 move = self.algorithm_manager.algorithm.forward(state, actions, reward)
                 self.sio.emit("make_move", json.dumps({"move": move}), namespace="/")
-        
+
         self.sio.disconnect()
-    
+
     def start(self) -> None:
         if self.running:
             return
@@ -98,5 +98,5 @@ class Runner:
         self.running = False
         self.data = None
         self.run_process.join()
-        
+
         self.run_process = threading.Thread(target=self.run)

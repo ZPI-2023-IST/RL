@@ -27,9 +27,17 @@ class AlgorithmManager:
         )
 
     def configure_algorithm(self, config: dict) -> None:
+        print(config)
         self.algorithm.config_model(config)
         self.logger.info(
             f"New config: {self.algorithm.config.as_dict()}",
+            LogType.CONFIG,
+        )
+
+    def update_config(self, config: dict) -> None:
+        self.algorithm.update_config(config)
+        self.logger.info(
+            f"Updated config: {self.algorithm.config.as_dict()}",
             LogType.CONFIG,
         )
 
