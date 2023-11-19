@@ -9,7 +9,7 @@ from rl.logger.Logger import LogType, Logger, LogLevel
 
 class Runner:
     def __init__(
-        self, logger: Logger, algorithm_manager: AlgorithmManager, max_game_len=100
+        self, logger: Logger, algorithm_manager: AlgorithmManager, max_game_len=100, config=None
     ) -> None:
         self.logger = logger
         self.algorithm_manager = algorithm_manager
@@ -20,12 +20,15 @@ class Runner:
         self.run_process = threading.Thread(target=self.run)
         self.sio = None
         self.data = None
+       
+        with open(config) as f:
+            self.config = json.load(f)
 
         self._mount_socketio()
 
     def _mount_socketio(self) -> None:
         self.sio = socketio.Client()
-
+        
         @self.sio.event
         def connect():
             mode = self.algorithm_manager.algorithm.config.mode
@@ -50,7 +53,8 @@ class Runner:
 
     def run(self) -> None:
         self.start_time = time.time()
-        self.sio.connect("http://localhost:5002", wait_timeout=10, namespaces=["/"])
+        port = self.config["game_port"]
+        self.sio.connect(f"http://localhost:{port}", wait_timeout=10, namespaces=["/"])
         self.sio.emit("make_move", json.dumps({"move": None}), namespace="/")
 
         move = None

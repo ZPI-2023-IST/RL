@@ -12,4 +12,4 @@ app.config["CORS_HEADERS"] = "Content-Type"
 logger = Logger()
 algorithm_manager.mount(logger)
 
-runner = Runner(logger, algorithm_manager)
+runner = Runner(logger, algorithm_manager, config="config.json")
