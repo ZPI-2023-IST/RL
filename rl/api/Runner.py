@@ -20,6 +20,9 @@ class Runner:
         self.run_process = threading.Thread(target=self.run)
         self.sio = None
         self.data = None
+        
+        self.current_game = []
+        self.game_history = []
        
         with open(config) as f:
             self.config = json.load(f)
@@ -65,17 +68,30 @@ class Runner:
 
             self.data = json.loads(self.data)
             reward = self.data["reward"]
-            state = self.data["game_board"]
+            board = self.data["game_board"]
             actions = self.data["moves_vector"]
+            board_raw = self.data["board_raw"]
+            state = self.data["state"]
+                        
+            if self.algorithm_manager.algorithm.config.mode == "test":
+                board_raw_dict = {
+                    "Board": board_raw[0],
+                    "FreeCells": board_raw[1],
+                    "Stack": board_raw[2]
+                }
+                self.current_game.append(board_raw_dict)
+                if state.__str__() != "ONGOING" or game_step > self.max_game_len or len(actions) == 0:
+                    self.game_history.append(self.current_game)
+                    self.current_game = []
 
             self.data = None
-
             game_step += 1
+            
             if len(actions) == 0 or game_step > self.max_game_len:
                 self.sio.emit("make_move", json.dumps({"move": None}), namespace="/")
                 game_step = 0
             else:
-                move = self.algorithm_manager.algorithm.forward(state, actions, reward)
+                move = self.algorithm_manager.algorithm.forward(board, actions, reward)
                 self.sio.emit("make_move", json.dumps({"move": move}), namespace="/")
 
         self.sio.disconnect()

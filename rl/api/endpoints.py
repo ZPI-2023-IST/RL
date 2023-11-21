@@ -189,3 +189,12 @@ def get_configurable_parameters():
 
     response = flask.jsonify(params)
     return response
+
+
+@app.route("/game-history")
+def get_game_history():
+    """
+    Endpoint returns game history.
+    """
+    response = flask.jsonify({"history": runner.game_history})
+    return response
