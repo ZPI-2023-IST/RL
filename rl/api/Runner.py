@@ -80,7 +80,7 @@ class Runner:
                     "Stack": board_raw[2]
                 }
                 self.current_game.append(board_raw_dict)
-                if state.__str__() != "ONGOING" or game_step > self.max_game_len or len(actions) == 0:
+                if state.__str__() != "ONGOING" or game_step >= self.max_game_len or len(actions) == 0:
                     self.game_history.append(self.current_game)
                     self.current_game = []
 
