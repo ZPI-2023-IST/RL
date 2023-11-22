@@ -13,9 +13,6 @@ class Algorithm(ABC):
         self.logger = logger
         self.config = None
 
-        config = {k: v[1] for k, v in self.get_configurable_parameters().items()}
-        self.config_model(config)
-
     @abstractmethod
     def forward(self, state: list, actions: list, reward: float) -> int:
         """

@@ -16,6 +16,8 @@ class AlgorithmManager:
 
     def set_default_algorithm(self) -> None:
         self.set_algorithm(self.DEFAULT_ALGORITHM)
+        config = {k: v[1] for k, v in self.algorithm.get_configurable_parameters().items()}
+        self.configure_algorithm(config)
 
     def set_algorithm(self, algorithm_name: str, *args, **kwargs) -> None:
         algorithm_class = self.registered_algorithms[algorithm_name]
