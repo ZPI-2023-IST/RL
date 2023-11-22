@@ -34,7 +34,6 @@ class Algorithm(ABC):
         pass
 
     def config_model(self, config: dict) -> None:
-        print(config)
         self.config = Config.from_dict(config)
 
     def update_config(self, config: dict) -> None:

@@ -42,7 +42,6 @@ def run():
             runner.stop()
         return flask.jsonify({"run": run})
     else:
-        print(runner.time)
         return flask.jsonify({"run": runner.running, "time": runner.time})
 
 
@@ -61,8 +60,6 @@ def model():
     if request.method == "GET":
         config = algorithm_manager.algorithm.config.as_dict()
         config["algorithm"] = algorithm_manager.algorithm_name
-
-        print(config)
 
         with open(model_dir / config_name, "w") as f:
             json.dump(config, f)
