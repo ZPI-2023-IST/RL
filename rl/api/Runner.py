@@ -4,12 +4,13 @@ import socketio
 import json
 
 from rl.algorithms.AlgorithmManager import AlgorithmManager
-from rl.logger.Logger import LogType, Logger, LogLevel
+from rl.logger.Logger import LogType, Logger
+from rl.algorithms.Config import States
 
 
 class Runner:
     def __init__(
-        self, logger: Logger, algorithm_manager: AlgorithmManager, max_game_len=100, config=None
+        self, logger: Logger, algorithm_manager: AlgorithmManager, max_game_len=100, config="config.json"
     ) -> None:
         self.logger = logger
         self.algorithm_manager = algorithm_manager
@@ -102,7 +103,7 @@ class Runner:
         mode = self.algorithm_manager.algorithm.config.mode
         self.logger.info(
             f"Starting {self.algorithm_manager.algorithm_name} in {mode} mode",
-            LogType.TRAIN if mode == "train" else LogType.TEST,
+            LogType.TRAIN if mode == States.TRAIN else LogType.TEST,
         )
         self.running = True
         self.run_process.start()
@@ -113,7 +114,7 @@ class Runner:
         mode = self.algorithm_manager.algorithm.config.mode
         self.logger.info(
             f"Stopping {self.algorithm_manager.algorithm_name} in {mode} mode",
-            LogType.TRAIN if mode == "train" else LogType.TEST,
+            LogType.TRAIN if mode == States.TRAIN else LogType.TEST,
         )
         self.running = False
         self.data = None
