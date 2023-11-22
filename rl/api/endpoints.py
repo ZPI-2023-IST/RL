@@ -102,10 +102,8 @@ def model():
 @app.route("/config", methods=["GET", "PUT", "POST"])
 def config():
     """
-    Endpoint allows for GETtin curent configuration and PUTting
-    new configuration. Acceptable keys in request:
-        key1 - bla bla
-        key2 - bla bla
+    Endpoint allows for GETtin curent configuration, POSTting
+    new configuration and PUTting updated configuration.
     """
     if request.method == "PUT":
         if runner.running:
@@ -116,6 +114,18 @@ def config():
             return response
 
         data = json.loads(request.data)
+        if "algorithm" in data.keys():
+            data.pop("algorithm")
+        
+        # check if any key are marked as unmodifiable
+        for k, _ in data.items():
+            if not algorithm_manager.algorithm.get_configurable_parameters()[k].modifiable:
+                response = flask.jsonify(
+                    {"error": f"Parameter {k} is not modifiable"}
+                )
+                response.status_code = 400
+                return response
+            
         algorithm_manager.update_config(data)
         response_data = algorithm_manager.algorithm.config.as_dict()
         response = flask.jsonify(response_data)
