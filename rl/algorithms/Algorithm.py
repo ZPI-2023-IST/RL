@@ -3,16 +3,15 @@ from collections import namedtuple
 
 from rl.algorithms.Config import Config
 
-Parameter = namedtuple("Parameter", ("type", "default", "min", "max", "help"))
+Parameter = namedtuple(
+    "Parameter", ("type", "default", "min", "max", "help", "modifiable")
+)
 
 
 class Algorithm(ABC):
     def __init__(self, logger) -> None:
         self.logger = logger
         self.config = None
-
-        config = {k: v[1] for k, v in self.get_configurable_parameters().items()}
-        self.config_model(config)
 
     @abstractmethod
     def forward(self, state: list, actions: list, reward: float, game_status: str) -> int:
@@ -42,3 +41,6 @@ class Algorithm(ABC):
         Restart the model (this is not the same as again initialization)
         """
         pass
+    
+    def update_config(self, config: dict) -> None:
+        self.config.update(config)

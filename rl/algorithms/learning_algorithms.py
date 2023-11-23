@@ -195,6 +195,7 @@ class DQN(Algorithm):
                 1,
                 None,
                 "Number of observations in the state",
+                False,
             ),
             "hidden_layers": Parameter(
                 ParameterType.STRING.name,
@@ -204,11 +205,20 @@ class DQN(Algorithm):
                 "Number of nodes in hidden layers. Every hidden layer needs to be separated by comma",
             ),
             "n_actions": Parameter(
+<<<<<<< HEAD
                 ParameterType.INT.name, 
                 108, 
                 1, 
                 None, 
                 "Number of actions in the state"
+=======
+                ParameterType.INT.name,
+                376,
+                0,
+                None,
+                "Number of actions in the state",
+                False,
+>>>>>>> integration
             ),
             "eps_start": Parameter(
                 ParameterType.FLOAT.name,
@@ -216,6 +226,7 @@ class DQN(Algorithm):
                 0,
                 1,
                 "Probability of choosing random action at the beginning",
+                True,
             ),
             "eps_end": Parameter(
                 ParameterType.FLOAT.name,
@@ -223,6 +234,7 @@ class DQN(Algorithm):
                 0,
                 1,
                 "Probability of choosing random action at the end",
+                True,
             ),
             "eps_decay": Parameter(
                 ParameterType.FLOAT.name,
@@ -230,6 +242,7 @@ class DQN(Algorithm):
                 0,
                 None,
                 "Number of steps over which eps is linearly annealed",
+                True,
             ),
             "memory_size": Parameter(
                 ParameterType.INT.name,
@@ -237,6 +250,7 @@ class DQN(Algorithm):
                 1,
                 None,
                 "Number of transitions stored in memory",
+                True,
             ),
             "batch_size": Parameter(
                 ParameterType.INT.name,
@@ -244,6 +258,7 @@ class DQN(Algorithm):
                 1,
                 2048,
                 "Number of transitions used for training in one batch",
+                True,
             ),
             "gamma": Parameter(
                 ParameterType.FLOAT.name,
@@ -251,6 +266,7 @@ class DQN(Algorithm):
                 0,
                 1,
                 "Discount factor for future rewards",
+                True,
             ),
             "tau": Parameter(
                 ParameterType.FLOAT.name,
@@ -258,6 +274,7 @@ class DQN(Algorithm):
                 0,
                 1,
                 "Soft update of target network's weights",
+                True,
             ),
             "lr": Parameter(
                 ParameterType.FLOAT.name,
@@ -265,6 +282,7 @@ class DQN(Algorithm):
                 0,
                 None,
                 "Learning rate for Adam optimizer",
+                True,
             ),
             "use_gpu": Parameter(
                 ParameterType.BOOL.name,
@@ -272,6 +290,7 @@ class DQN(Algorithm):
                 None,
                 None,
                 "Whether to use GPU for training",
+                True,
             ),
             "seed": Parameter(
                 ParameterType.INT.name,
@@ -279,6 +298,7 @@ class DQN(Algorithm):
                 0,
                 None,
                 "Random seed for reproducibility",
+                True,
             ),
         }
 

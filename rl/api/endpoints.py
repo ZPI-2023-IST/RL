@@ -42,7 +42,6 @@ def run():
             runner.stop()
         return flask.jsonify({"run": run})
     else:
-        print(runner.time)
         return flask.jsonify({"run": runner.running, "time": runner.time})
 
 
@@ -70,9 +69,8 @@ def model():
             torch.save(model.state_dict(), model_dir / params_name)
 
         shutil.make_archive(data_dir / zip_name, "zip", model_dir)
-        response = flask.send_file(
-            pathlib.Path(f"../{data_dir / zip_name}.zip"), as_attachment=True
-        )
+        abs_path = pathlib.Path(data_dir / zip_name).resolve()
+        response = flask.send_file(f"{abs_path}.zip", as_attachment=True)
         return response
     else:
         if runner.running:
@@ -101,13 +99,11 @@ def model():
         return flask.jsonify({"success": "success"})
 
 
-@app.route("/config", methods=["GET", "PUT"])
+@app.route("/config", methods=["GET", "PUT", "POST"])
 def config():
     """
-    Endpoint allows for GETtin curent configuration and PUTting
-    new configuration. Acceptable keys in request:
-        key1 - bla bla
-        key2 - bla bla
+    Endpoint allows for GETtin curent configuration, POSTting
+    new configuration and PUTting updated configuration.
     """
     if request.method == "PUT":
         if runner.running:
@@ -117,8 +113,35 @@ def config():
             response.status_code = 400
             return response
 
+<<<<<<< HEAD
+=======
         data = json.loads(request.data)
-        print(data)
+        if "algorithm" in data.keys():
+            data.pop("algorithm")
+        
+        # check if any key are marked as unmodifiable
+        for k, _ in data.items():
+            if not algorithm_manager.algorithm.get_configurable_parameters()[k].modifiable:
+                response = flask.jsonify(
+                    {"error": f"Parameter {k} is not modifiable"}
+                )
+                response.status_code = 400
+                return response
+            
+        algorithm_manager.update_config(data)
+        response_data = algorithm_manager.algorithm.config.as_dict()
+        response = flask.jsonify(response_data)
+        return response
+    elif request.method == "POST":
+        if runner.running:
+            response = flask.jsonify(
+                {"error": "Stop training/testing before changing configuration"}
+            )
+            response.status_code = 400
+            return response
+
+>>>>>>> integration
+        data = json.loads(request.data)
 
         algorithm_name = (
             data.pop("algorithm")
@@ -132,6 +155,17 @@ def config():
         return response
     else:
         data = algorithm_manager.algorithm.config.as_dict()
+
+        if request.args.get("modifiable"):
+            data = {
+                k: v
+                for k, v in data.items()
+                if k != "algorithm"
+                and k != "mode"
+                and algorithm_manager.algorithm.get_configurable_parameters()[
+                    k
+                ].modifiable
+            }
         data["algorithm"] = algorithm_manager.algorithm_name
         response = flask.jsonify(data)
         return response
@@ -145,7 +179,32 @@ def get_configurable_parameters():
     algoritm.
     """
     params = {}
-    for algorithm_name, algorithm in algorithm_manager.registered_algorithms.items():
-        params[algorithm_name] = algorithm.get_configurable_parameters()
+
+    if request.args.get("modifiable"):
+        for (
+            algorithm_name,
+            algorithm,
+        ) in algorithm_manager.registered_algorithms.items():
+            params[algorithm_name] = {
+                k: v
+                for k, v in algorithm.get_configurable_parameters().items()
+                if v.modifiable
+            }
+    else:
+        for (
+            algorithm_name,
+            algorithm,
+        ) in algorithm_manager.registered_algorithms.items():
+            params[algorithm_name] = algorithm.get_configurable_parameters()
+
     response = flask.jsonify(params)
+    return response
+
+
+@app.route("/game-history")
+def get_game_history():
+    """
+    Endpoint returns game history.
+    """
+    response = flask.jsonify({"history": runner.game_history})
     return response

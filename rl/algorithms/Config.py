@@ -12,6 +12,10 @@ class Config:
     def as_dict(self) -> dict:
         return self.__dict__
 
+    def update(self, config: dict) -> None:
+        for key, value in config.items():
+            setattr(self, key, value)
+
 
 class States(Enum):
     TRAIN = "train"
