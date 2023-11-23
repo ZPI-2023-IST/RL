@@ -205,20 +205,11 @@ class DQN(Algorithm):
                 "Number of nodes in hidden layers. Every hidden layer needs to be separated by comma",
             ),
             "n_actions": Parameter(
-<<<<<<< HEAD
                 ParameterType.INT.name, 
                 108, 
                 1, 
                 None, 
                 "Number of actions in the state"
-=======
-                ParameterType.INT.name,
-                376,
-                0,
-                None,
-                "Number of actions in the state",
-                False,
->>>>>>> integration
             ),
             "eps_start": Parameter(
                 ParameterType.FLOAT.name,

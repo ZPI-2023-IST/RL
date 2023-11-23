@@ -114,9 +114,7 @@ class Runner:
             reward = self.data["reward"]
             board = self.data["game_board"]
             actions = self.data["moves_vector"]
-<<<<<<< HEAD
             game_status = self.data["state"]
-=======
             board_raw = self.data["board_raw"]
             state = self.data["state"]
                         
@@ -130,7 +128,6 @@ class Runner:
                 if state.__str__() != "ONGOING" or game_step > self.max_game_len or len(actions) == 0:
                     self.game_history.append(self.current_game)
                     self.current_game = []
->>>>>>> integration
 
             self.data = None
             game_step += 1
@@ -146,13 +143,9 @@ class Runner:
                 self.sio.emit("make_move", json.dumps({"move": None}), namespace="/")
                 game_step = 0
             else:
-<<<<<<< HEAD
                 move = self.algorithm_manager.algorithm.forward(state, actions, reward)
                 self.game_results.store_game_results(reward, game_status, False)
                 
-=======
-                move = self.algorithm_manager.algorithm.forward(board, actions, reward)
->>>>>>> integration
                 self.sio.emit("make_move", json.dumps({"move": move}), namespace="/")
 
         self.sio.disconnect()
