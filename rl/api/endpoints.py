@@ -48,7 +48,9 @@ def run():
 @app.route("/model", methods=["GET", "PUT"])
 def model():
     """
-    Enpoint allows downloading model from RL module.
+    Endpoint allows downloading model from RL module.
+    GET method returns model in zip format.
+    PUT method imports model from zip file.
     """
     data_dir = pathlib.Path("data")
     model_dir = data_dir / "model"
@@ -172,8 +174,7 @@ def config():
 def get_configurable_parameters():
     """
     Enpoint returns tree of configurable parameter.
-    Paramters are going to depend on mode (train/test) and
-    algoritm.
+    Each algorithm has its own set of parameters.
     """
     params = {}
 

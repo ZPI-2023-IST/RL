@@ -103,7 +103,7 @@ class Runner:
         mode = self.algorithm_manager.algorithm.config.mode
         self.logger.info(
             f"Starting {self.algorithm_manager.algorithm_name} in {mode} mode",
-            LogType.TRAIN if mode == States.TRAIN else LogType.TEST,
+            LogType.TRAIN if mode == States.TRAIN.value else LogType.TEST.value,
         )
         self.running = True
         self.run_process.start()
@@ -114,7 +114,7 @@ class Runner:
         mode = self.algorithm_manager.algorithm.config.mode
         self.logger.info(
             f"Stopping {self.algorithm_manager.algorithm_name} in {mode} mode",
-            LogType.TRAIN if mode == States.TRAIN else LogType.TEST,
+            LogType.TRAIN if mode == States.TRAIN.value else LogType.TEST.value,
         )
         self.running = False
         self.data = None
