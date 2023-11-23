@@ -7,8 +7,7 @@ Repository for Reinforcement Learning framework.
 
 ## Run
 
-    cd rl
-    flask --app api.main run
+    python rl/api/main.py
 
 ## Tests
 

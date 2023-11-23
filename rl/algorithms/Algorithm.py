@@ -1,6 +1,11 @@
 from abc import ABC, abstractmethod
+from collections import namedtuple
 
 from rl.algorithms.Config import Config
+
+Parameter = namedtuple(
+    "Parameter", ("type", "default", "min", "max", "help", "modifiable")
+)
 
 
 class Algorithm(ABC):
@@ -17,31 +22,19 @@ class Algorithm(ABC):
 
     @classmethod
     @abstractmethod
-    def _get_train_params(cls) -> dict:
-        """
-        Train params should be returned as a dict of tuples,
-        where the first element is the type of the parameter and
-        the second element is the default value, third element is the
-        minimum value and the fourth element is the maximum value.
-        Key is the name of the parameter.
-        """
-        raise NotImplementedError
-
-    @classmethod
-    @abstractmethod
-    def _get_test_params(cls) -> dict:
-        """
-        Test params should be returned as a dict of tuples,
-        where the first element is the type of the parameter and
-        the second element is the default value, third element is the
-        minimum value and the fourth element is the maximum value.
-        Key is the name of the parameter.
-        """
-        raise NotImplementedError
-
-    @classmethod
     def get_configurable_parameters(cls) -> dict:
-        return {"train": cls._get_train_params(), "test": cls._get_test_params()}
+        pass
+
+    @abstractmethod
+    def get_model(self) -> object:
+        pass
+
+    @abstractmethod
+    def set_params(self, params) -> object:
+        pass
 
     def config_model(self, config: dict) -> None:
         self.config = Config.from_dict(config)
+
+    def update_config(self, config: dict) -> None:
+        self.config.update(config)

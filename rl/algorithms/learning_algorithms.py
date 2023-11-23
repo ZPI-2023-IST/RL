@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.nn.functional import softmax
 
-from rl.algorithms import Algorithm, algorithm_manager, ParameterType, States
+from rl.algorithms import Algorithm, algorithm_manager, ParameterType, States, Parameter
 from rl.algorithms.modules.SimpleNet import SimpleNet
 
 """
@@ -179,29 +179,104 @@ class DQN(Algorithm):
 
     # Parameters where everything is None should be provided by translator
     @classmethod
-    def _get_train_params(cls) -> dict:
+    def get_configurable_parameters(cls) -> dict:
         return {
-            "n_observations": (ParameterType.INT.name, None, None, None),
-            "n_actions": (ParameterType.INT.name, None, None, None),
-            "mode": (ParameterType.STRING.name, None, None, None),
-            "eps_start": (ParameterType.FLOAT.name, 0.9, 0, 10),
-            "eps_end": (ParameterType.FLOAT.name, 0.05, 0, 10),
-            "eps_decay": (ParameterType.FLOAT.name, 1000, 0, 10000),
-            "memory_size": (ParameterType.INT.name, 10000, 1, 100000),
-            "batch_size": (ParameterType.INT.name, 128, 1, 2048),
-            "gamma": (ParameterType.FLOAT.name, 0.99, 0, 10),
-            "tau": (ParameterType.FLOAT.name, 0.005, 0, 10),
-            "lr": (ParameterType.FLOAT.name, 1e-4, 0, 10),
-            "use_gpu": (ParameterType.BOOL.name, False, None, None),
-            "seed": (ParameterType.INT.name, 1001, 0, 100000),
-        }
-
-    # Parameters where everything is None should be provided by translator
-    @classmethod
-    def _get_test_params(cls) -> dict:
-        return {
-            "mode": (ParameterType.STRING.name, None, None, None),
-            "use_gpu": (ParameterType.BOOL.name, True, None, None),
+            "n_observations": Parameter(
+                ParameterType.INT.name,
+                2720,
+                0,
+                None,
+                "Number of observations in the state",
+                False,
+            ),
+            "n_actions": Parameter(
+                ParameterType.INT.name,
+                376,
+                0,
+                None,
+                "Number of actions in the state",
+                False,
+            ),
+            "eps_start": Parameter(
+                ParameterType.FLOAT.name,
+                0.9,
+                0,
+                1,
+                "Probability of choosing random action at the beginning",
+                True,
+            ),
+            "eps_end": Parameter(
+                ParameterType.FLOAT.name,
+                0.05,
+                0,
+                1,
+                "Probability of choosing random action at the end",
+                True,
+            ),
+            "eps_decay": Parameter(
+                ParameterType.FLOAT.name,
+                1000,
+                0,
+                None,
+                "Number of steps over which eps is linearly annealed",
+                True,
+            ),
+            "memory_size": Parameter(
+                ParameterType.INT.name,
+                10000,
+                1,
+                None,
+                "Number of transitions stored in memory",
+                True,
+            ),
+            "batch_size": Parameter(
+                ParameterType.INT.name,
+                128,
+                1,
+                2048,
+                "Number of transitions used for training in one batch",
+                True,
+            ),
+            "gamma": Parameter(
+                ParameterType.FLOAT.name,
+                0.99,
+                0,
+                1,
+                "Discount factor for future rewards",
+                True,
+            ),
+            "tau": Parameter(
+                ParameterType.FLOAT.name,
+                0.005,
+                0,
+                1,
+                "Soft update of target network's weights",
+                True,
+            ),
+            "lr": Parameter(
+                ParameterType.FLOAT.name,
+                1e-4,
+                0,
+                None,
+                "Learning rate for Adam optimizer",
+                True,
+            ),
+            "use_gpu": Parameter(
+                ParameterType.BOOL.name,
+                False,
+                None,
+                None,
+                "Whether to use GPU for training",
+                True,
+            ),
+            "seed": Parameter(
+                ParameterType.INT.name,
+                None,
+                0,
+                None,
+                "Random seed for reproducibility",
+                True,
+            ),
         }
 
     def config_model(self, config: dict) -> None:
@@ -214,8 +289,9 @@ class DQN(Algorithm):
         )
 
         # Model setup
-        random.seed(self.config.seed)
-        torch.manual_seed(self.config.seed)
+        if self.config.seed:
+            random.seed(self.config.seed)
+            torch.manual_seed(self.config.seed)
         self.memory = ReplayMemory(self.config.memory_size, self.config.batch_size)
         self.policy_net = SimpleNet(
             [self.config.n_observations, 20, self.config.n_actions]
@@ -241,3 +317,10 @@ class DQN(Algorithm):
                 action_probs[act] = 0
 
         return action_probs
+
+    def get_model(self):
+        return self.policy_net
+
+    def set_params(self, params):
+        self.policy_net.load_state_dict(params)
+        self.target_net.load_state_dict(params)
