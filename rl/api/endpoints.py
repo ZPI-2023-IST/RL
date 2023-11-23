@@ -113,8 +113,6 @@ def config():
             response.status_code = 400
             return response
 
-<<<<<<< HEAD
-=======
         data = json.loads(request.data)
         if "algorithm" in data.keys():
             data.pop("algorithm")
@@ -140,7 +138,6 @@ def config():
             response.status_code = 400
             return response
 
->>>>>>> integration
         data = json.loads(request.data)
 
         algorithm_name = (

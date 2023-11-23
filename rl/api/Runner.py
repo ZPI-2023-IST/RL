@@ -63,16 +63,13 @@ class Runner:
         self.run_process = threading.Thread(target=self.run)
         self.sio = None
         self.data = None
-<<<<<<< HEAD
         self.game_results = GameResults()
-=======
         
         self.current_game = []
         self.game_history = []
        
         with open(config) as f:
             self.config = json.load(f)
->>>>>>> integration
 
         self._mount_socketio()
 
