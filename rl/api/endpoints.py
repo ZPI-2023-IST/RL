@@ -118,16 +118,16 @@ def config():
         data = json.loads(request.data)
         if "algorithm" in data.keys():
             data.pop("algorithm")
-        
+
         # check if any key are marked as unmodifiable
         for k, _ in data.items():
-            if not algorithm_manager.algorithm.get_configurable_parameters()[k].modifiable:
-                response = flask.jsonify(
-                    {"error": f"Parameter {k} is not modifiable"}
-                )
+            if not algorithm_manager.algorithm.get_configurable_parameters()[
+                k
+            ].modifiable:
+                response = flask.jsonify({"error": f"Parameter {k} is not modifiable"})
                 response.status_code = 400
                 return response
-            
+
         algorithm_manager.update_config(data)
         response_data = algorithm_manager.algorithm.config.as_dict()
         response = flask.jsonify(response_data)
