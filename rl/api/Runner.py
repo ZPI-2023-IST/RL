@@ -75,14 +75,14 @@ class Runner:
             state = self.data["state"]
                         
             if self.algorithm_manager.algorithm.config.mode == "test":
-                board_raw_dict = {
-                    "Board": board_raw[0],
-                    "FreeCells": board_raw[1],
-                    "Stack": board_raw[2]
-                }
-                self.current_game.append(board_raw_dict)
+                self.current_game.append(board_raw)
                 if state.__str__() != "ONGOING" or game_step >= self.max_game_len or len(actions) == 0:
-                    self.game_history.append(self.current_game)
+                    state_info = state.__str__() if state.__str__() != "ONGOING" else "TIMEOUT"
+                    game_info = {
+                        "game": self.current_game,
+                        "state": state_info,
+                    }
+                    self.game_history.append(game_info)
                     self.current_game = []
 
             self.data = None
@@ -103,7 +103,7 @@ class Runner:
         mode = self.algorithm_manager.algorithm.config.mode
         self.logger.info(
             f"Starting {self.algorithm_manager.algorithm_name} in {mode} mode",
-            LogType.TRAIN if mode == States.TRAIN.value else LogType.TEST.value,
+            LogType.TRAIN if mode == States.TRAIN.value else LogType.TEST,
         )
         self.running = True
         self.run_process.start()
@@ -114,7 +114,7 @@ class Runner:
         mode = self.algorithm_manager.algorithm.config.mode
         self.logger.info(
             f"Stopping {self.algorithm_manager.algorithm_name} in {mode} mode",
-            LogType.TRAIN if mode == States.TRAIN.value else LogType.TEST.value,
+            LogType.TRAIN if mode == States.TRAIN.value else LogType.TEST,
         )
         self.running = False
         self.data = None
