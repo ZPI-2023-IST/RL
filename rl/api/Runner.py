@@ -22,11 +22,11 @@ class GameResults:
         self.cur_game_rewards.append(reward)
         if is_end_game:
             self.no_games_played += 1
-            if game_status == State.WON.__str__():
+            if game_status == GameStates.WON.name:
                 self.no_won_games += 1
-            elif game_status == State.LOST.__str__():
+            elif game_status == GameStates.LOST.name:
                 self.no_lost_games += 1
-            elif game_status == State.ONGOING.__str__():
+            elif game_status == GameStates.ONGOING.name:
                 self.no_timeouts += 1
             else:
                 raise Exception("Unknown status")
@@ -46,8 +46,8 @@ class GameResults:
 
 class GameStates(Enum):
     ONGOING = auto()
-    WIN = auto()
-    LOSS = auto()
+    WON = auto()
+    LOST = auto()
 
 
 class Runner:
@@ -105,7 +105,7 @@ class Runner:
     def run(self) -> None:
         self.start_time = time.time()
         port = self.config["game_port"]
-        self.sio.connect(f"http://api:{port}", wait_timeout=10, namespaces=["/"])
+        self.sio.connect(f"http://localhost:{port}", wait_timeout=10, namespaces=["/"])
         self.sio.emit("make_move", json.dumps({"move": None}), namespace="/")
 
         move = None
@@ -116,7 +116,6 @@ class Runner:
 
             self.data = json.loads(self.data)
             reward = self.data["reward"]
-            board = self.data["game_board"]
             actions = self.data["moves_vector"]
             game_status = self.data["state"]
             board_raw = self.data["board_raw"]
