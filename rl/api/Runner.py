@@ -2,17 +2,11 @@ import threading
 import time
 import socketio
 import json
-from enum import Enum
+from enum import auto, Enum
 
 from rl.algorithms.AlgorithmManager import AlgorithmManager
 from rl.logger.Logger import LogType, Logger
 from rl.algorithms.Config import States
-
-
-class State(Enum):
-    ONGOING = 0
-    WON = 1
-    LOST = 2
 
 
 class GameResults:
@@ -50,9 +44,19 @@ class GameResults:
         text += f"No timeouts: {self.no_timeouts}\n"
         return text
 
+class GameStates(Enum):
+    ONGOING = auto()
+    WIN = auto()
+    LOSS = auto()
+
+
 class Runner:
     def __init__(
-        self, logger: Logger, algorithm_manager: AlgorithmManager, max_game_len=100, config="config.json"
+        self,
+        logger: Logger,
+        algorithm_manager: AlgorithmManager,
+        max_game_len=100,
+        config="config.json",
     ) -> None:
         self.logger = logger
         self.algorithm_manager = algorithm_manager
@@ -67,7 +71,7 @@ class Runner:
         
         self.current_game = []
         self.game_history = []
-       
+
         with open(config) as f:
             self.config = json.load(f)
 
@@ -75,7 +79,7 @@ class Runner:
 
     def _mount_socketio(self) -> None:
         self.sio = socketio.Client()
-        
+
         @self.sio.event
         def connect():
             mode = self.algorithm_manager.algorithm.config.mode
@@ -101,7 +105,7 @@ class Runner:
     def run(self) -> None:
         self.start_time = time.time()
         port = self.config["game_port"]
-        self.sio.connect(f"http://localhost:{port}", wait_timeout=10, namespaces=["/"])
+        self.sio.connect(f"http://api:{port}", wait_timeout=10, namespaces=["/"])
         self.sio.emit("make_move", json.dumps({"move": None}), namespace="/")
 
         move = None
@@ -117,24 +121,32 @@ class Runner:
             game_status = self.data["state"]
             board_raw = self.data["board_raw"]
             state = self.data["state"]
-                        
+
             if self.algorithm_manager.algorithm.config.mode == "test":
-                board_raw_dict = {
-                    "Board": board_raw[0],
-                    "FreeCells": board_raw[1],
-                    "Stack": board_raw[2]
-                }
-                self.current_game.append(board_raw_dict)
-                if state.__str__() != "ONGOING" or game_step > self.max_game_len or len(actions) == 0:
-                    self.game_history.append(self.current_game)
+                self.current_game.append(board_raw)
+                if (
+                    state != GameStates.ONGOING.name
+                    or game_step >= self.max_game_len
+                    or len(actions) == 0
+                ):
+                    state_info = (
+                        state
+                        if state != GameStates.ONGOING.name
+                        else "TIMEOUT"
+                    )
+                    game_info = {
+                        "game": self.current_game,
+                        "state": state_info,
+                    }
+                    self.game_history.append(game_info)
                     self.current_game = []
 
             self.data = None
             game_step += 1
-            
+
             if len(actions) == 0 or game_step > self.max_game_len:
                 print(self.game_results)
-                if game_status == State.ONGOING.__str__():
+                if game_status == GameStates.ONGOING.__str__():
                     self.algorithm_manager.algorithm.forward(state, actions, reward)
                 else:
                     self.algorithm_manager.algorithm.forward(None, None, reward)
@@ -156,7 +168,7 @@ class Runner:
         mode = self.algorithm_manager.algorithm.config.mode
         self.logger.info(
             f"Starting {self.algorithm_manager.algorithm_name} in {mode} mode",
-            LogType.TRAIN if mode == States.TRAIN else LogType.TEST,
+            LogType.TRAIN if mode == States.TRAIN.value else LogType.TEST,
         )
         self.running = True
         self.run_process.start()
@@ -167,7 +179,7 @@ class Runner:
         mode = self.algorithm_manager.algorithm.config.mode
         self.logger.info(
             f"Stopping {self.algorithm_manager.algorithm_name} in {mode} mode",
-            LogType.TRAIN if mode == States.TRAIN else LogType.TEST,
+            LogType.TRAIN if mode == States.TRAIN.value else LogType.TEST,
         )
         self.running = False
         self.data = None
