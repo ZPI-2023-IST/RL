@@ -182,13 +182,6 @@ class DQN(Algorithm):
     @classmethod
     def get_configurable_parameters(cls) -> dict:
         return {
-            "mode": Parameter(
-                ParameterType.STRING.name,
-                States.TEST.value,
-                None,
-                None,
-                "Mode of the model (training or test)",
-            ),
             "n_observations": Parameter(
                 ParameterType.INT.name,
                 2720,
@@ -203,13 +196,15 @@ class DQN(Algorithm):
                 None,
                 None,
                 "Number of nodes in hidden layers. Every hidden layer needs to be separated by comma",
+                False
             ),
             "n_actions": Parameter(
                 ParameterType.INT.name, 
                 108, 
                 1, 
                 None, 
-                "Number of actions in the state"
+                "Number of actions in the state",
+                False
             ),
             "eps_start": Parameter(
                 ParameterType.FLOAT.name,

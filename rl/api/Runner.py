@@ -117,20 +117,20 @@ class Runner:
             self.data = json.loads(self.data)
             reward = self.data["reward"]
             actions = self.data["moves_vector"]
+            game_board = self.data["game_board"]
             game_status = self.data["state"]
             board_raw = self.data["board_raw"]
-            state = self.data["state"]
 
             if self.algorithm_manager.algorithm.config.mode == "test":
                 self.current_game.append(board_raw)
                 if (
-                    state != GameStates.ONGOING.name
+                    game_status != GameStates.ONGOING.name
                     or game_step >= self.max_game_len
                     or len(actions) == 0
                 ):
                     state_info = (
-                        state
-                        if state != GameStates.ONGOING.name
+                        game_status
+                        if game_status != GameStates.ONGOING.name
                         else "TIMEOUT"
                     )
                     game_info = {
@@ -146,7 +146,7 @@ class Runner:
             if len(actions) == 0 or game_step > self.max_game_len:
                 print(self.game_results)
                 if game_status == GameStates.ONGOING.__str__():
-                    self.algorithm_manager.algorithm.forward(state, actions, reward)
+                    self.algorithm_manager.algorithm.forward(game_board, actions, reward)
                 else:
                     self.algorithm_manager.algorithm.forward(None, None, reward)
                 self.game_results.store_game_results(reward, game_status, True)
@@ -154,7 +154,7 @@ class Runner:
                 self.sio.emit("make_move", json.dumps({"move": None}), namespace="/")
                 game_step = 0
             else:
-                move = self.algorithm_manager.algorithm.forward(state, actions, reward)
+                move = self.algorithm_manager.algorithm.forward(game_board, actions, reward)
                 self.game_results.store_game_results(reward, game_status, False)
                 
                 self.sio.emit("make_move", json.dumps({"move": move}), namespace="/")
