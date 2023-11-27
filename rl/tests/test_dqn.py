@@ -172,6 +172,7 @@ class TestDQN(unittest.TestCase):
         config["n_observations"] = 2
         config["hidden_layers"] = "16,16,16"
         config["n_actions"] = 2
+        config["mode"] = States.TEST.value
 
         self.algorithm.config_model(config)
         action = self.algorithm.forward(state, actions, 10)
