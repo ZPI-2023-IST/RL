@@ -30,7 +30,7 @@ class Algorithm(ABC):
         pass
 
     @abstractmethod
-    def set_params(self, params) -> object:
+    def set_params(self, params) -> None:
         pass
 
     def config_model(self, config: dict) -> None:
