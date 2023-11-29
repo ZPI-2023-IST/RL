@@ -167,7 +167,7 @@ class DQN(Algorithm):
         loss.backward()
 
         # Gradient clipping
-        torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
+        torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), self.config.clip_value)
         self.optimizer.step()
 
         # Soft update of the target network's weights
@@ -268,6 +268,14 @@ class DQN(Algorithm):
                 0,
                 None,
                 "Learning rate for Adam optimizer",
+                True,
+            ),
+            "clip_value": Parameter(
+                ParameterType.FLOAT.name,
+                100,
+                None,
+                None,
+                "Maximum allowed value of the gradients",
                 True,
             ),
             "use_gpu": Parameter(
