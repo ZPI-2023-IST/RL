@@ -9,10 +9,55 @@ from rl.logger.Logger import LogType, Logger
 from rl.algorithms.Config import States
 
 
+class GameResults:
+    def __init__(self) -> None:
+        self.cur_game_rewards = []
+        self.all_game_rewards_sum = {}
+        self.no_games_played = 0
+        self.no_won_games = 0
+        self.no_lost_games = 0
+        self.no_timeouts = 0
+
+    def store_game_results(self, reward, game_status, is_end_game):
+        self.cur_game_rewards.append(reward)
+        if is_end_game:
+            self.no_games_played += 1
+            if game_status == GameStates.WON.name:
+                self.no_won_games += 1
+            elif game_status == GameStates.LOST.name:
+                self.no_lost_games += 1
+            elif game_status == GameStates.ONGOING.name:
+                self.no_timeouts += 1
+            else:
+                raise Exception("Unknown status")
+
+            self.all_game_rewards_sum[self.no_games_played] = sum(self.cur_game_rewards)
+            self.cur_game_rewards = []
+            
+    def __str__(self) -> str:
+        text = "Game Results\n"
+        text += f"Current game rewards: {self.cur_game_rewards}\n"
+        text += f"All game rewards sum: {self.all_game_rewards_sum}\n"
+        text += f"No games played: {self.no_games_played}\n"
+        text += f"No won games: {self.no_won_games}\n"
+        text += f"No lost games: {self.no_lost_games}\n"
+        text += f"No timeouts: {self.no_timeouts}\n"
+        return text
+    
+    def get_results(self):
+        return {
+            "CurrentGameRewards": self.cur_game_rewards,
+            "AllGameRewardsSummed": self.all_game_rewards_sum,
+            "NoGamesPlayer": self.no_games_played,
+            "NoWonGames": self.no_won_games,
+            "NoLostGames": self.no_lost_games,
+            "NoTimeouts": self.no_timeouts
+        }
+
 class GameStates(Enum):
     ONGOING = auto()
-    WIN = auto()
-    LOSS = auto()
+    WON = auto()
+    LOST = auto()
 
 
 class Runner:
@@ -32,7 +77,8 @@ class Runner:
         self.run_process = threading.Thread(target=self.run)
         self.sio = None
         self.data = None
-
+        self.game_results = GameResults()
+        
         self.current_game = []
         self.game_history = []
 
@@ -80,21 +126,21 @@ class Runner:
 
             self.data = json.loads(self.data)
             reward = self.data["reward"]
-            board = self.data["game_board"]
             actions = self.data["moves_vector"]
+            game_board = self.data["game_board"]
+            game_status = self.data["state"]
             board_raw = self.data["board_raw"]
-            state = self.data["state"]
 
-            if self.algorithm_manager.algorithm.config.mode == "test":
+            if self.algorithm_manager.algorithm.config.mode == States.TEST.value:
                 self.current_game.append(board_raw)
                 if (
-                    state != GameStates.ONGOING.name
+                    game_status != GameStates.ONGOING.name
                     or game_step >= self.max_game_len
                     or len(actions) == 0
                 ):
                     state_info = (
-                        state
-                        if state != GameStates.ONGOING.name
+                        game_status
+                        if game_status != GameStates.ONGOING.name
                         else "TIMEOUT"
                     )
                     game_info = {
@@ -108,10 +154,18 @@ class Runner:
             game_step += 1
 
             if len(actions) == 0 or game_step > self.max_game_len:
+                if game_status == GameStates.ONGOING.name:
+                    self.algorithm_manager.algorithm.forward(game_board, actions, reward)
+                else:
+                    self.algorithm_manager.algorithm.forward(None, None, reward)
+                self.game_results.store_game_results(reward, game_status, True)
+
                 self.sio.emit("make_move", json.dumps({"move": None}), namespace="/")
                 game_step = 0
             else:
-                move = self.algorithm_manager.algorithm.forward(board, actions, reward)
+                move = self.algorithm_manager.algorithm.forward(game_board, actions, reward)
+                self.game_results.store_game_results(reward, game_status, False)
+                
                 self.sio.emit("make_move", json.dumps({"move": move}), namespace="/")
 
         self.sio.disconnect()

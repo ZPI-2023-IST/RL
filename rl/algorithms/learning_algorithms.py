@@ -49,10 +49,15 @@ class DQN(Algorithm):
         self.action_m = None
 
     def forward(self, state: list, actions: list, reward: float) -> int:
-        self._store_memory(state, reward)
-        self._optimize_model()
-        chosen_action = self._make_action(state, actions)
-        return chosen_action
+        if self.config.mode == States.TRAIN.value:
+            self._store_memory(state, reward)
+            self._optimize_model()
+
+        if actions is not None:
+            chosen_action = self._make_action(state, actions)
+            return chosen_action
+        else:
+            return None
 
     def _make_action(self, state: list, actions: list[list]) -> list:
         self.state_m = torch.tensor(
@@ -65,7 +70,7 @@ class DQN(Algorithm):
         ) * math.exp(-1.0 * self.steps_done / self.config.eps_decay)
         self.steps_done += 1
 
-        if sample > eps_threshold:
+        if sample > eps_threshold or self.config.mode == States.TEST.value:
             with torch.no_grad():
                 # Reduce dimensionality of model output
                 ml_output = self.policy_net(self.state_m)[0]
@@ -114,88 +119,92 @@ class DQN(Algorithm):
             )
 
     def _optimize_model(self):
-        if self.config.mode == States.TRAIN.value:
-            if len(self.memory) < self.config.batch_size:
-                return
+        if len(self.memory) < self.config.batch_size:
+            return
 
-            transitions = self.memory.sample()
-            batch = Transition(*zip(*transitions))
+        transitions = self.memory.sample()
+        batch = Transition(*zip(*transitions))
 
-            # Compute a mask of non-final states and concatenate the batch elements
-            # (a final state would've been the one after which simulation ended)
-            non_final_mask = torch.tensor(
-                tuple(map(lambda s: s is not None, batch.next_state)),
-                device=self.device,
-                dtype=torch.bool,
-            )
-            non_final_next_states = torch.cat(
-                [s for s in batch.next_state if s is not None]
-            )
+        # Compute a mask of non-final states and concatenate the batch elements
+        # (a final state would've been the one after which simulation ended)
+        non_final_mask = torch.tensor(
+            tuple(map(lambda s: s is not None, batch.next_state)),
+            device=self.device,
+            dtype=torch.bool,
+        )
+        non_final_next_states = torch.cat(
+            [s for s in batch.next_state if s is not None]
+        )
 
-            state_batch = torch.cat(batch.state)
-            action_batch = torch.cat(batch.action)
-            reward_batch = torch.cat(batch.reward)
+        state_batch = torch.cat(batch.state)
+        action_batch = torch.cat(batch.action)
+        reward_batch = torch.cat(batch.reward)
 
-            # Note - here the net can give improper moves because it will later be punished for it
-            # Compute actions which would've been taken for each batch state according to policy net
-            state_action_values = self.policy_net(state_batch).gather(1, action_batch)
+        # Note - here the net can give improper moves because it will later be punished for it
+        # Compute actions which would've been taken for each batch state according to policy net
+        state_action_values = self.policy_net(state_batch).gather(1, action_batch)
 
-            # Note - here the net can give improper moves because it will later be punished for it
-            # Compute V(s_{t+1}) for all next states.
-            next_state_values = torch.zeros(self.config.batch_size, device=self.device)
-            with torch.no_grad():
-                next_state_values[non_final_mask] = self.target_net(
-                    non_final_next_states
-                ).max(1)[0]
+        # Note - here the net can give improper moves because it will later be punished for it
+        # Compute V(s_{t+1}) for all next states.
+        next_state_values = torch.zeros(self.config.batch_size, device=self.device)
+        with torch.no_grad():
+            next_state_values[non_final_mask] = self.target_net(
+                non_final_next_states
+            ).max(1)[0]
 
-            # Compute the expected Q values
-            expected_state_action_values = (
-                next_state_values * self.config.gamma
-            ) + reward_batch
+        # Compute the expected Q values
+        expected_state_action_values = (
+            next_state_values * self.config.gamma
+        ) + reward_batch
 
-            # Compute loss
-            criterion = nn.SmoothL1Loss()
-            # We do repeat to avoid warning message
-            loss = criterion(
-                state_action_values, expected_state_action_values.unsqueeze(1)
-            )
+        # Compute loss
+        criterion = nn.SmoothL1Loss()
+        # We do repeat to avoid warning message
+        loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
 
-            # Optimize the model
-            self.optimizer.zero_grad()
-            loss.backward()
+        # Optimize the model
+        self.optimizer.zero_grad()
+        loss.backward()
 
-            # Gradient clipping
-            torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
-            self.optimizer.step()
+        # Gradient clipping
+        torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), self.config.clip_value)
+        self.optimizer.step()
 
-            # Soft update of the target network's weights
-            target_net_state_dict = self.target_net.state_dict()
-            policy_net_state_dict = self.policy_net.state_dict()
-            for key in policy_net_state_dict:
-                target_net_state_dict[key] = policy_net_state_dict[
-                    key
-                ] * self.config.tau + target_net_state_dict[key] * (1 - self.config.tau)
-            self.target_net.load_state_dict(target_net_state_dict)
+        # Soft update of the target network's weights
+        target_net_state_dict = self.target_net.state_dict()
+        policy_net_state_dict = self.policy_net.state_dict()
+        for key in policy_net_state_dict:
+            target_net_state_dict[key] = policy_net_state_dict[
+                key
+            ] * self.config.tau + target_net_state_dict[key] * (1 - self.config.tau)
+        self.target_net.load_state_dict(target_net_state_dict)
 
-    # Parameters where everything is None should be provided by translator
     @classmethod
     def get_configurable_parameters(cls) -> dict:
         return {
             "n_observations": Parameter(
                 ParameterType.INT.name,
                 2720,
-                0,
+                1,
                 None,
                 "Number of observations in the state",
                 False,
             ),
-            "n_actions": Parameter(
-                ParameterType.INT.name,
-                376,
-                0,
+            "hidden_layers": Parameter(
+                ParameterType.STRING.name,
+                "1024,256",
                 None,
+                None,
+                "Number of nodes in hidden layers. Every hidden layer needs to be separated by comma",
+                False
+            ),
+            "n_actions": Parameter(
+                ParameterType.INT.name, 
+                108, 
+                1, 
+                None, 
                 "Number of actions in the state",
-                False,
+                False
             ),
             "eps_start": Parameter(
                 ParameterType.FLOAT.name,
@@ -261,6 +270,14 @@ class DQN(Algorithm):
                 "Learning rate for Adam optimizer",
                 True,
             ),
+            "clip_value": Parameter(
+                ParameterType.FLOAT.name,
+                100,
+                None,
+                None,
+                "Maximum allowed value of the gradients",
+                True,
+            ),
             "use_gpu": Parameter(
                 ParameterType.BOOL.name,
                 False,
@@ -289,16 +306,18 @@ class DQN(Algorithm):
         )
 
         # Model setup
+        hidden_layers_list = map(int, self.config.hidden_layers.split(","))
+        layers = [self.config.n_observations]
+        layers.extend(hidden_layers_list)
+        layers.append(self.config.n_actions)
+
         if self.config.seed:
             random.seed(self.config.seed)
             torch.manual_seed(self.config.seed)
+
         self.memory = ReplayMemory(self.config.memory_size, self.config.batch_size)
-        self.policy_net = SimpleNet(
-            [self.config.n_observations, 20, self.config.n_actions]
-        ).to(self.device)
-        self.target_net = SimpleNet(
-            [self.config.n_observations, 20, self.config.n_actions]
-        ).to(self.device)
+        self.policy_net = SimpleNet(layers).to(self.device)
+        self.target_net = SimpleNet(layers).to(self.device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
 
         # Optimizer setup
@@ -307,6 +326,12 @@ class DQN(Algorithm):
         )
 
         # Things to store later in memory
+        self.state_m = None
+        self.action_m = None
+
+    def restart(self):
+        self.steps_done = 0
+        self.memory = ReplayMemory(self.config.memory_size, self.config.batch_size)
         self.state_m = None
         self.action_m = None
 

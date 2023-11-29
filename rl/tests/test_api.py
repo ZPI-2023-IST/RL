@@ -34,7 +34,7 @@ class TestAPI(unittest.TestCase):
 
     def test_algorithm_update(self):
         config = {
-            k: v[1] for k, v in DQN.get_configurable_parameters()["train"].items()
+            k: v[1] for k, v in DQN.get_configurable_parameters().items()
         }
         config["algorithm"] = "dqn"
         config["n_observations"] = 1

@@ -27,4 +27,3 @@ class ParameterType(Enum):
     FLOAT = auto()
     BOOL = auto()
     STRING = auto()
-    LIST = auto()

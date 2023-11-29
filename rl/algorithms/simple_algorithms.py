@@ -10,8 +10,11 @@ class RandomAlgorithm(Algorithm):
         super().__init__(logger)
 
     def forward(self, state, actions, reward: float) -> int:
-        random.seed(self.config.seed)
-        return random.choice(actions)
+        if actions is not None:
+            random.seed(self.config.seed)
+            return random.choice(actions)
+        else:
+            return None
 
     @classmethod
     def get_configurable_parameters(cls) -> dict:

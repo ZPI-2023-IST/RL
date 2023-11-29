@@ -33,14 +33,16 @@ class TestAlgorithm(unittest.TestCase):
     def test_configurable_params(self):
         class TestAlgorithm(Algorithm):
             @classmethod
-            def _get_train_params(cls):
+            def get_configurable_parameters(cls) -> dict:
                 return {"a": 1, "b": 2}
 
-            @classmethod
-            def _get_test_params(cls):
-                return {"c": 3, "d": 4}
+            def get_model(self) -> object:
+                pass
+
+            def set_params(self, params) -> object:
+                pass
 
         self.assertEqual(
             TestAlgorithm.get_configurable_parameters(),
-            {"train": {"a": 1, "b": 2}, "test": {"c": 3, "d": 4}},
+            {"a": 1, "b": 2},
         )
