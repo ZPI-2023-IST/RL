@@ -70,7 +70,7 @@ class DQN(Algorithm):
         ) * math.exp(-1.0 * self.steps_done / self.config.eps_decay)
         self.steps_done += 1
 
-        if sample > eps_threshold:
+        if sample > eps_threshold or self.config.mode == States.TEST.value:
             with torch.no_grad():
                 # Reduce dimensionality of model output
                 ml_output = self.policy_net(self.state_m)[0]

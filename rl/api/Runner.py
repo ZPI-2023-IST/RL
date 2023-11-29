@@ -43,6 +43,16 @@ class GameResults:
         text += f"No lost games: {self.no_lost_games}\n"
         text += f"No timeouts: {self.no_timeouts}\n"
         return text
+    
+    def get_results(self):
+        return {
+            "CurrentGameRewards": self.cur_game_rewards,
+            "AllGameRewardsSummed": self.all_game_rewards_sum,
+            "NoGamesPlayer": self.no_games_played,
+            "NoWonGames": self.no_won_games,
+            "NoLostGames": self.no_lost_games,
+            "NoTimeouts": self.no_timeouts
+        }
 
 class GameStates(Enum):
     ONGOING = auto()
@@ -105,7 +115,7 @@ class Runner:
     def run(self) -> None:
         self.start_time = time.time()
         port = self.config["game_port"]
-        self.sio.connect(f"http://localhost:{port}", wait_timeout=10, namespaces=["/"])
+        self.sio.connect(f"http://api:{port}", wait_timeout=10, namespaces=["/"])
         self.sio.emit("make_move", json.dumps({"move": None}), namespace="/")
 
         move = None
@@ -121,7 +131,7 @@ class Runner:
             game_status = self.data["state"]
             board_raw = self.data["board_raw"]
 
-            if self.algorithm_manager.algorithm.config.mode == "test":
+            if self.algorithm_manager.algorithm.config.mode == States.TEST.value:
                 self.current_game.append(board_raw)
                 if (
                     game_status != GameStates.ONGOING.name
@@ -144,8 +154,7 @@ class Runner:
             game_step += 1
 
             if len(actions) == 0 or game_step > self.max_game_len:
-                print(self.game_results)
-                if game_status == GameStates.ONGOING.__str__():
+                if game_status == GameStates.ONGOING.name:
                     self.algorithm_manager.algorithm.forward(game_board, actions, reward)
                 else:
                     self.algorithm_manager.algorithm.forward(None, None, reward)
