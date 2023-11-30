@@ -115,7 +115,7 @@ class Runner:
     def run(self) -> None:
         self.start_time = time.time()
         port = self.config["game_port"]
-        self.sio.connect(f"http://api:{port}", wait_timeout=10, namespaces=["/"])
+        self.sio.connect(f"http://localhost:{port}", wait_timeout=10, namespaces=["/"])
         self.sio.emit("make_move", json.dumps({"move": None}), namespace="/")
 
         move = None
