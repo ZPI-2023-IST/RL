@@ -206,3 +206,12 @@ def get_game_history():
     """
     response = flask.jsonify({"history": runner.game_history})
     return response
+
+
+@app.route("/stats")
+def stats():
+    """
+    Endpoint returns statistics about training/testing process.
+    """
+    response = flask.jsonify(runner.game_results.get_results())
+    return response
