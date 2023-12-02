@@ -27,13 +27,7 @@ class TestAlgorithmManager(unittest.TestCase):
 
             @classmethod
             def get_configurable_parameters(cls) -> dict:
-                return {"a": Parameter(
-                    ParameterType.FLOAT,
-                    1,
-                    1,
-                    1,
-                    "TEST"
-                )}
+                return {"a": Parameter(ParameterType.FLOAT, 1, 1, 1, "TEST")}
 
             def get_model(self) -> object:
                 pass

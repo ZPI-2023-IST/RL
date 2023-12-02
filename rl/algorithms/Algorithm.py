@@ -41,6 +41,6 @@ class Algorithm(ABC):
         Restart the model (this is not the same as again initialization)
         """
         pass
-    
+
     def update_config(self, config: dict) -> None:
         self.config.update(config)

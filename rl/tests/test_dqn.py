@@ -20,9 +20,7 @@ class TestDQN(unittest.TestCase):
         actions = [0, 1]
 
         # Force to go the first way of select_action
-        config = {
-            k: v[1] for k, v in DQN.get_configurable_parameters().items()
-        }
+        config = {k: v[1] for k, v in DQN.get_configurable_parameters().items()}
         config["n_observations"] = 2
         config["hidden_layers"] = "16,16"
         config["n_actions"] = 2
@@ -47,9 +45,7 @@ class TestDQN(unittest.TestCase):
         next_state = [1, 0]
         reward = 1
 
-        config = {
-            k: v[1] for k, v in DQN.get_configurable_parameters().items()
-        }
+        config = {k: v[1] for k, v in DQN.get_configurable_parameters().items()}
         config["n_observations"] = 2
         config["hidden_layers"] = "32,32"
         config["n_actions"] = 2
@@ -89,9 +85,7 @@ class TestDQN(unittest.TestCase):
         state = [0, 1]
         actions = [0, 1]
 
-        config = {
-            k: v[1] for k, v in DQN.get_configurable_parameters().items()
-        }
+        config = {k: v[1] for k, v in DQN.get_configurable_parameters().items()}
         config["n_observations"] = 2
         config["hidden_layers"] = "16,16"
         config["n_actions"] = 2
@@ -146,9 +140,7 @@ class TestDQN(unittest.TestCase):
         state = [0, 1]
         actions = [0]
 
-        config = {
-            k: v[1] for k, v in DQN.get_configurable_parameters().items()
-        }
+        config = {k: v[1] for k, v in DQN.get_configurable_parameters().items()}
         config["n_observations"] = 2
         config["hidden_layers"] = "16,16,16"
         config["n_actions"] = 2
@@ -166,9 +158,7 @@ class TestDQN(unittest.TestCase):
         state = None
         actions = None
 
-        config = {
-            k: v[1] for k, v in DQN.get_configurable_parameters().items()
-        }
+        config = {k: v[1] for k, v in DQN.get_configurable_parameters().items()}
         config["n_observations"] = 2
         config["hidden_layers"] = "16,16,16"
         config["n_actions"] = 2
@@ -184,9 +174,7 @@ class TestDQN(unittest.TestCase):
         actions = [0, 1]
 
         # Force to go the first way of select_action
-        config = {
-            k: v[1] for k, v in DQN.get_configurable_parameters().items()
-        }
+        config = {k: v[1] for k, v in DQN.get_configurable_parameters().items()}
         config["n_observations"] = 2
         config["n_actions"] = 2
         config["mode"] = States.TRAIN.value

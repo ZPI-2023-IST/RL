@@ -167,7 +167,9 @@ class DQN(Algorithm):
         loss.backward()
 
         # Gradient clipping
-        torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), self.config.clip_value)
+        torch.nn.utils.clip_grad_value_(
+            self.policy_net.parameters(), self.config.clip_value
+        )
         self.optimizer.step()
 
         # Soft update of the target network's weights
@@ -196,15 +198,15 @@ class DQN(Algorithm):
                 None,
                 None,
                 "Number of nodes in hidden layers. Every hidden layer needs to be separated by comma",
-                False
+                False,
             ),
             "n_actions": Parameter(
-                ParameterType.INT.name, 
-                108, 
-                1, 
-                None, 
+                ParameterType.INT.name,
+                108,
+                1,
+                None,
                 "Number of actions in the state",
-                False
+                False,
             ),
             "eps_start": Parameter(
                 ParameterType.FLOAT.name,
