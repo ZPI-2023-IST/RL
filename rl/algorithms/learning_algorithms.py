@@ -71,6 +71,7 @@ class DQN(Algorithm):
         self.steps_done += 1
 
         if sample > eps_threshold or self.config.mode == States.TEST.value:
+            self.policy_net.eval()
             with torch.no_grad():
                 # Reduce dimensionality of model output
                 ml_output = self.policy_net(self.state_m)[0]
@@ -121,6 +122,8 @@ class DQN(Algorithm):
     def _optimize_model(self):
         if len(self.memory) < self.config.batch_size:
             return
+        
+        self.policy_net.train()
 
         transitions = self.memory.sample()
         batch = Transition(*zip(*transitions))
@@ -330,6 +333,8 @@ class DQN(Algorithm):
         # Things to store later in memory
         self.state_m = None
         self.action_m = None
+        
+        self.target_net.eval()
 
     def restart(self):
         self.steps_done = 0
