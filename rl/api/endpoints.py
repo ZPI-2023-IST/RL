@@ -213,5 +213,8 @@ def stats():
     """
     Endpoint returns statistics about training/testing process.
     """
-    response = flask.jsonify(runner.game_results.get_results())
-    return response
+    data = []
+    for file in runner.stats_dir.iterdir():
+        with open(file) as f:
+            data.append(json.load(f))
+    return flask.jsonify(data)
