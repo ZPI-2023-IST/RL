@@ -50,7 +50,7 @@ class DQN(Algorithm):
 
     def forward(self, state: list, actions: list, reward: float) -> int:
         if self.config.mode == States.TRAIN.value:
-            self._store_memory(state, reward)
+            self._store_memory(state, actions, reward)
             self._optimize_model()
 
         if actions is not None:
@@ -64,11 +64,20 @@ class DQN(Algorithm):
             state, dtype=torch.float32, device=self.device
         ).unsqueeze(0)
 
+        if self.config.input_possible_moves:
+            action_tensor = torch.zeros(self.config.n_actions, dtype=torch.float32, device=self.device)
+            action_tensor[torch.tensor(actions, device=self.device)] = 1
+            action_tensor = action_tensor.unsqueeze(0)
+            self.state_m = torch.cat((self.state_m, action_tensor), dim=1)
+
         sample = random.random()
         eps_threshold = self.config.eps_end + (
             self.config.eps_start - self.config.eps_end
         ) * math.exp(-1.0 * self.steps_done / self.config.eps_decay)
         self.steps_done += 1
+
+        if self.steps_done % 1000 == 0:
+            print(f"eps_threshold: {eps_threshold}")
 
         if sample > eps_threshold or self.config.mode == States.TEST.value:
             self.policy_net.eval()
@@ -91,7 +100,7 @@ class DQN(Algorithm):
                     self.action_m = torch.tensor(
                         [[ml_action]], device=self.device, dtype=torch.long
                     )
-                    self._store_memory(state, -10)
+                    self._store_memory(state, actions,-self.config.illegal_move_penalty)
 
                 self.action_m = torch.tensor(
                     [[action]], device=self.device, dtype=torch.long
@@ -99,19 +108,25 @@ class DQN(Algorithm):
 
                 return action
         else:
-            action = random.sample(actions, 1)
+            action = [random.randint(0, self.config.n_actions - 1)]
+            if action[0] not in actions:
+                self._store_memory(state, actions, -self.config.illegal_move_penalty)
+                action = random.sample(actions, 1)
+            
             self.action_m = torch.tensor([action], device=self.device, dtype=torch.long)
             # Reduce dimensionality of action
             return action[0]
 
-    def _store_memory(self, state: list, reward: float) -> None:
+    def _store_memory(self, state: list, actions: list[list], reward: float) -> None:
         # self.state_m contains previous state
         if self.state_m is not None and self.action_m is not None:
-            next_state = (
-                torch.tensor([state], dtype=torch.float32)
-                if state is not None
-                else None
-            )
+            if self.config.input_possible_moves and state is not None:
+                action_tensor = torch.zeros(self.config.n_actions, dtype=torch.float32, device=self.device)
+                action_tensor[torch.tensor(actions, device=self.device)] = 1
+                action_tensor = action_tensor.unsqueeze(0)
+                state = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
+                state = torch.cat((state, action_tensor), dim=1)
+            next_state = state
             self.memory.push(
                 self.state_m,
                 self.action_m,
@@ -122,7 +137,10 @@ class DQN(Algorithm):
     def _optimize_model(self):
         if len(self.memory) < self.config.batch_size:
             return
-        
+
+        if self.steps_done % self.config.update_frequency != 0:
+            return
+
         self.policy_net.train()
 
         transitions = self.memory.sample()
@@ -168,6 +186,7 @@ class DQN(Algorithm):
         # Optimize the model
         self.optimizer.zero_grad()
         loss.backward()
+        print(f"Loss: {loss.item()}")
 
         # Gradient clipping
         torch.nn.utils.clip_grad_value_(
@@ -176,13 +195,19 @@ class DQN(Algorithm):
         self.optimizer.step()
 
         # Soft update of the target network's weights
-        target_net_state_dict = self.target_net.state_dict()
-        policy_net_state_dict = self.policy_net.state_dict()
-        for key in policy_net_state_dict:
-            target_net_state_dict[key] = policy_net_state_dict[
-                key
-            ] * self.config.tau + target_net_state_dict[key] * (1 - self.config.tau)
-        self.target_net.load_state_dict(target_net_state_dict)
+        if (
+            self.steps_done
+            % (self.config.target_update_frequency * self.config.update_frequency)
+            == 0
+        ):
+            print("Updating target network")
+            target_net_state_dict = self.target_net.state_dict()
+            policy_net_state_dict = self.policy_net.state_dict()
+            for key in policy_net_state_dict:
+                target_net_state_dict[key] = policy_net_state_dict[
+                    key
+                ] * self.config.tau + target_net_state_dict[key] * (1 - self.config.tau)
+            self.target_net.load_state_dict(target_net_state_dict)
 
     @classmethod
     def get_configurable_parameters(cls) -> dict:
@@ -299,6 +324,46 @@ class DQN(Algorithm):
                 "Random seed for reproducibility",
                 True,
             ),
+            "illegal_move_penalty": Parameter(
+                ParameterType.FLOAT.name,
+                0.1,
+                0,
+                None,
+                "Penalty for making illegal move (It will be subtracted from reward)",
+                True,
+            ),
+            "update_frequency": Parameter(
+                ParameterType.INT.name,
+                1,
+                1,
+                None,
+                "Number of steps between each optimization step",
+                True,
+            ),
+            "target_update_frequency": Parameter(
+                ParameterType.INT.name,
+                100,
+                1,
+                None,
+                "Number of optimazation steps between each target network update",
+                True,
+            ),
+            "use_resnets": Parameter(
+                ParameterType.BOOL.name,
+                True,
+                None,
+                None,
+                "Whether to use resnets in the model",
+                False,
+            ),
+            "input_possible_moves": Parameter(
+                ParameterType.BOOL.name,
+                True,
+                None,
+                None,
+                "Whether to input possible moves to the model",
+                False,
+            ),
         }
 
     def config_model(self, config: dict) -> None:
@@ -311,8 +376,13 @@ class DQN(Algorithm):
         )
 
         # Model setup
+        observations = (
+            self.config.n_observations
+            + self.config.n_actions * self.config.input_possible_moves
+        )
+        print(observations)
         hidden_layers_list = map(int, self.config.hidden_layers.split(","))
-        layers = [self.config.n_observations]
+        layers = [observations]
         layers.extend(hidden_layers_list)
         layers.append(self.config.n_actions)
 
@@ -321,8 +391,8 @@ class DQN(Algorithm):
             torch.manual_seed(self.config.seed)
 
         self.memory = ReplayMemory(self.config.memory_size, self.config.batch_size)
-        self.policy_net = SimpleNet(layers).to(self.device)
-        self.target_net = SimpleNet(layers).to(self.device)
+        self.policy_net = SimpleNet(layers, self.config.use_resnets).to(self.device)
+        self.target_net = SimpleNet(layers, self.config.use_resnets).to(self.device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
 
         # Optimizer setup
@@ -333,7 +403,7 @@ class DQN(Algorithm):
         # Things to store later in memory
         self.state_m = None
         self.action_m = None
-        
+
         self.target_net.eval()
 
     def restart(self):
