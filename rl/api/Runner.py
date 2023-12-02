@@ -155,10 +155,11 @@ class Runner:
 
             if len(actions) == 0 or game_step > self.max_game_len:
                 if game_status == GameStates.ONGOING.name:
+                    self.game_results.store_game_results(-5, game_status, True)
                     self.algorithm_manager.algorithm.forward(game_board, actions, reward)
                 else:
+                    self.game_results.store_game_results(reward, game_status, True)
                     self.algorithm_manager.algorithm.forward(None, None, reward)
-                self.game_results.store_game_results(reward, game_status, True)
 
                 self.sio.emit("make_move", json.dumps({"move": None}), namespace="/")
                 game_step = 0
