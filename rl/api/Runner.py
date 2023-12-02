@@ -96,6 +96,7 @@ class Runner:
         self.run_process = threading.Thread(target=self.run)
         self.sio = None
         self.data = None
+        self.steps = 0
         self.game_results = GameResults(algorithm_manager)
 
         self.current_game = []
@@ -149,6 +150,7 @@ class Runner:
                 if not self.data:
                     continue
 
+                self.steps += 1
                 self.data = json.loads(self.data)
                 reward = self.data["reward"]
                 actions = self.data["moves_vector"]
@@ -215,6 +217,7 @@ class Runner:
             return
 
     def start(self) -> None:
+        self.steps = 0
         self.run_process = threading.Thread(target=self.run)
         if self.running:
             return
@@ -239,4 +242,5 @@ class Runner:
         self.data = None
         timestamp_str = time.strftime("%Y%m%d%H%M%S")
         self.game_results.save_results(self.stats_dir / f"{timestamp_str}.json")
+        self.game_results.reset()
         self.run_process.join()
