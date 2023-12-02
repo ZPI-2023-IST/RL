@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum, auto
 
 
@@ -20,8 +21,9 @@ class Logger:
         self._messages = []
 
     def log(self, message: str, log_level: LogLevel, log_type: LogType) -> None:
-        self._messages.append((log_level, log_type, message))
-        print(f"[{log_level.name}][{log_type.name}] {message}")
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self._messages.append((log_level, log_type, message, timestamp))
+        print(f"[{timestamp}][{log_level.name}][{log_type.name}] {message}")
 
     def info(self, message: str, log_type: LogType) -> None:
         self.log(message, LogLevel.INFO, log_type)
@@ -30,6 +32,13 @@ class Logger:
         if filter:
             return []
         return [
-            {"message": {"level": level.name, "type": type.name, "content": message}}
-            for level, type, message in self._messages
+            {
+                "message": {
+                    "level": level.name,
+                    "type": type.name,
+                    "content": message,
+                    "timestamp": timestamp,
+                }
+            }
+            for level, type, message, timestamp in self._messages
         ]
