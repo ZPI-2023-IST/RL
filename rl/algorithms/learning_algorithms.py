@@ -389,7 +389,6 @@ class DQN(Algorithm):
             self.config.n_observations
             + self.config.n_actions * self.config.input_possible_moves
         )
-        print(observations)
         hidden_layers_list = map(int, self.config.hidden_layers.split(","))
         layers = [observations]
         layers.extend(hidden_layers_list)
