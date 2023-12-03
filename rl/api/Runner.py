@@ -136,6 +136,7 @@ class Runner:
         return time.time() - self.start_time if self.running else 0
 
     def run(self) -> None:
+        TIMEOUT_PENALTY = -2
         try:
             self.start_time = time.time()
             port = self.config["game_port"]
@@ -183,7 +184,7 @@ class Runner:
                         self.algorithm_manager.algorithm.forward(
                             game_board, actions, reward
                         )
-                        self.game_results.store_game_results(-2, game_status, True)
+                        self.game_results.store_game_results(TIMEOUT_PENALTY, game_status, True)
                     else:
                         self.algorithm_manager.algorithm.forward(None, None, reward)
                         self.game_results.store_game_results(reward, game_status, True)
