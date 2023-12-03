@@ -60,9 +60,11 @@ class DQN(Algorithm):
             return None
 
     def _make_action(self, state: list, actions: list[list]) -> list:
-        self.state_m = torch.tensor(
-            state, dtype=torch.float32, device=self.device
-        ).unsqueeze(0)
+        self.state_m = (
+            torch.tensor(state, dtype=torch.float32, device=self.device)
+            .flatten()
+            .unsqueeze(0)
+        )
 
         if self.config.input_possible_moves:
             action_tensor = torch.zeros(
@@ -122,9 +124,9 @@ class DQN(Algorithm):
         # self.state_m contains previous state
         if self.state_m is not None and self.action_m is not None:
             state = (
-                torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(
-                    0
-                )
+                torch.tensor(state, dtype=torch.float32, device=self.device)
+                .flatten()
+                .unsqueeze(0)
                 if state is not None
                 else None
             )
