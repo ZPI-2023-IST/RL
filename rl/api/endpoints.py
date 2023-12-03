@@ -42,7 +42,9 @@ def run():
             runner.stop()
         return flask.jsonify({"run": run})
     else:
-        return flask.jsonify({"run": runner.running, "time": runner.time})
+        return flask.jsonify(
+            {"run": runner.running, "time": runner.time, "steps": runner.steps}
+        )
 
 
 @app.route("/model", methods=["GET", "PUT"])
@@ -213,5 +215,15 @@ def stats():
     """
     Endpoint returns statistics about training/testing process.
     """
-    response = flask.jsonify(runner.game_results.get_results())
-    return response
+    MAX_STATS = 100
+    data = []
+    for file in runner.stats_dir.iterdir():
+        with open(file) as f:
+            data.append(json.load(f))
+    if runner.running:
+        current = runner.game_results.get_results()
+        current["Name"] = "Current"
+        data.append(current)
+    if len(data) > MAX_STATS:
+        data = data[-MAX_STATS:]
+    return flask.jsonify(data)

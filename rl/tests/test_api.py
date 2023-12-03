@@ -33,9 +33,7 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(json.loads(response.data)["seed"], 2)
 
     def test_algorithm_update(self):
-        config = {
-            k: v[1] for k, v in DQN.get_configurable_parameters().items()
-        }
+        config = {k: v[1] for k, v in DQN.get_configurable_parameters().items()}
         config["algorithm"] = "dqn"
         config["n_observations"] = 1
         config["n_actions"] = 1
