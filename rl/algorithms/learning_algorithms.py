@@ -63,6 +63,7 @@ class DQN(Algorithm):
         self.state_m = torch.tensor(
             state, dtype=torch.float32, device=self.device
         ).flatten().unsqueeze(0)
+        print(self.state_m)
 
         sample = random.random()
         eps_threshold = self.config.eps_end + (
