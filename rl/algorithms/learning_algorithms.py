@@ -63,7 +63,6 @@ class DQN(Algorithm):
         self.state_m = torch.tensor(
             state, dtype=torch.float32, device=self.device
         ).flatten().unsqueeze(0)
-        print(self.state_m)
 
         sample = random.random()
         eps_threshold = self.config.eps_end + (
@@ -108,7 +107,7 @@ class DQN(Algorithm):
         # self.state_m contains previous state
         if self.state_m is not None and self.action_m is not None:
             next_state = (
-                torch.tensor([state], dtype=torch.float32).flatten()
+                torch.tensor([state], dtype=torch.float32).flatten().unsqueeze(0)
                 if state is not None
                 else None
             )
