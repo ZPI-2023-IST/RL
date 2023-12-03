@@ -18,7 +18,7 @@ class SimpleNet(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         for layer, batch_norm in zip(self.layers, self.batch_norms):
-            x_prev = x
+            x_prev = torch.clone(x)
             x = layer(x)
             if self.use_resnets and x_prev.shape == x.shape:
                 x = x + x_prev

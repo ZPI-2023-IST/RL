@@ -65,7 +65,9 @@ class DQN(Algorithm):
         ).unsqueeze(0)
 
         if self.config.input_possible_moves:
-            action_tensor = torch.zeros(self.config.n_actions, dtype=torch.float32, device=self.device)
+            action_tensor = torch.zeros(
+                self.config.n_actions, dtype=torch.float32, device=self.device
+            )
             action_tensor[torch.tensor(actions, device=self.device)] = 1
             action_tensor = action_tensor.unsqueeze(0)
             self.state_m = torch.cat((self.state_m, action_tensor), dim=1)
@@ -75,9 +77,6 @@ class DQN(Algorithm):
             self.config.eps_start - self.config.eps_end
         ) * math.exp(-1.0 * self.steps_done / self.config.eps_decay)
         self.steps_done += 1
-
-        if self.steps_done % 1000 == 0:
-            print(f"eps_threshold: {eps_threshold}")
 
         if sample > eps_threshold or self.config.mode == States.TEST.value:
             self.policy_net.eval()
@@ -100,7 +99,9 @@ class DQN(Algorithm):
                     self.action_m = torch.tensor(
                         [[ml_action]], device=self.device, dtype=torch.long
                     )
-                    self._store_memory(state, actions,-self.config.illegal_move_penalty)
+                    self._store_memory(
+                        state, actions, -self.config.illegal_move_penalty
+                    )
 
                 self.action_m = torch.tensor(
                     [[action]], device=self.device, dtype=torch.long
@@ -112,7 +113,7 @@ class DQN(Algorithm):
             if action[0] not in actions:
                 self._store_memory(state, actions, -self.config.illegal_move_penalty)
                 action = random.sample(actions, 1)
-            
+
             self.action_m = torch.tensor([action], device=self.device, dtype=torch.long)
             # Reduce dimensionality of action
             return action[0]
@@ -120,12 +121,22 @@ class DQN(Algorithm):
     def _store_memory(self, state: list, actions: list[list], reward: float) -> None:
         # self.state_m contains previous state
         if self.state_m is not None and self.action_m is not None:
+            state = (
+                torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(
+                    0
+                )
+                if state is not None
+                else None
+            )
+
             if self.config.input_possible_moves and state is not None:
-                action_tensor = torch.zeros(self.config.n_actions, dtype=torch.float32, device=self.device)
+                action_tensor = torch.zeros(
+                    self.config.n_actions, dtype=torch.float32, device=self.device
+                )
                 action_tensor[torch.tensor(actions, device=self.device)] = 1
                 action_tensor = action_tensor.unsqueeze(0)
-                state = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
                 state = torch.cat((state, action_tensor), dim=1)
+
             next_state = state
             self.memory.push(
                 self.state_m,
@@ -186,7 +197,6 @@ class DQN(Algorithm):
         # Optimize the model
         self.optimizer.zero_grad()
         loss.backward()
-        print(f"Loss: {loss.item()}")
 
         # Gradient clipping
         torch.nn.utils.clip_grad_value_(
@@ -200,7 +210,6 @@ class DQN(Algorithm):
             % (self.config.target_update_frequency * self.config.update_frequency)
             == 0
         ):
-            print("Updating target network")
             target_net_state_dict = self.target_net.state_dict()
             policy_net_state_dict = self.policy_net.state_dict()
             for key in policy_net_state_dict:
@@ -342,7 +351,7 @@ class DQN(Algorithm):
             ),
             "target_update_frequency": Parameter(
                 ParameterType.INT.name,
-                100,
+                1,
                 1,
                 None,
                 "Number of optimazation steps between each target network update",
@@ -358,7 +367,7 @@ class DQN(Algorithm):
             ),
             "input_possible_moves": Parameter(
                 ParameterType.BOOL.name,
-                True,
+                False,
                 None,
                 None,
                 "Whether to input possible moves to the model",
