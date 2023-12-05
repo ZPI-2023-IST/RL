@@ -144,7 +144,7 @@ class DQN(Algorithm):
                 self.state_m,
                 self.action_m,
                 next_state,
-                torch.tensor([reward], dtype=torch.float32),
+                torch.tensor([reward], dtype=torch.float32, device=self.device),
             )
 
     def _optimize_model(self):
