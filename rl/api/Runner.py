@@ -225,6 +225,7 @@ class Runner:
             LogType.TRAIN if mode == States.TRAIN.value else LogType.TEST,
         )
         self.running = True
+        self.algorithm_manager.algorithm.restart()
         self.game_results.reset()
         self.run_process.start()
 
