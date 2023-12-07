@@ -158,7 +158,7 @@ class Runner:
                     self.current_game.append(board_raw)
                     if (
                         game_status != GameStates.ONGOING.name
-                        or game_step >= self.max_game_len
+                        or game_step >= self.algorithm_manager.algorithm.config.timeout_steps
                         or len(actions) == 0
                     ):
                         state_info = (
