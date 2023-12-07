@@ -9,6 +9,7 @@ from torch.nn.functional import softmax
 
 from rl.algorithms import Algorithm, algorithm_manager, ParameterType, States, Parameter
 from rl.algorithms.modules.SimpleNet import SimpleNet
+from rl.algorithms.ProximalPolicyOptimazation import ProximalPolicyOptimazation
 
 """
 Implementation based on Pytorch tutorial
@@ -279,7 +280,7 @@ class DQN(Algorithm):
     def set_params(self, params):
         self.policy_net.load_state_dict(params)
         self.target_net.load_state_dict(params)
-        
+
     @classmethod
     def get_configurable_parameters(cls) -> dict:
         default_params = super().get_configurable_parameters()
