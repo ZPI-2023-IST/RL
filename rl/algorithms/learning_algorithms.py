@@ -220,9 +220,70 @@ class DQN(Algorithm):
                 ] * self.config.tau + target_net_state_dict[key] * (1 - self.config.tau)
             self.target_net.load_state_dict(target_net_state_dict)
 
+    def config_model(self, config: dict) -> None:
+        super().config_model(config)
+
+        # Unmodifiable params
+        self.steps_done = 0
+        self.device = torch.device(
+            "cuda" if torch.cuda.is_available() and self.config.use_gpu else "cpu"
+        )
+
+        # Model setup
+        observations = (
+            self.config.n_observations
+            + self.config.n_actions * self.config.input_possible_moves
+        )
+        hidden_layers_list = map(int, self.config.hidden_layers.split(","))
+        layers = [observations]
+        layers.extend(hidden_layers_list)
+        layers.append(self.config.n_actions)
+
+        if self.config.seed:
+            random.seed(self.config.seed)
+            torch.manual_seed(self.config.seed)
+
+        self.memory = ReplayMemory(self.config.memory_size, self.config.batch_size)
+        self.policy_net = SimpleNet(layers, self.config.use_resnets).to(self.device)
+        self.target_net = SimpleNet(layers, self.config.use_resnets).to(self.device)
+        self.target_net.load_state_dict(self.policy_net.state_dict())
+
+        # Optimizer setup
+        self.optimizer = optim.AdamW(
+            self.policy_net.parameters(), lr=self.config.lr, amsgrad=True
+        )
+
+        # Things to store later in memory
+        self.state_m = None
+        self.action_m = None
+
+        self.target_net.eval()
+
+    def restart(self):
+        self.steps_done = 0
+        self.memory = ReplayMemory(self.config.memory_size, self.config.batch_size)
+        self.state_m = None
+        self.action_m = None
+
+    # Remove invalid moves by setting all invalid moves to 0
+    def _remove_invalid_moves(self, action_probs, actions):
+        for act in range(self.config.n_actions):
+            if act not in actions:
+                action_probs[act] = 0
+
+        return action_probs
+
+    def get_model(self):
+        return self.policy_net
+
+    def set_params(self, params):
+        self.policy_net.load_state_dict(params)
+        self.target_net.load_state_dict(params)
+        
     @classmethod
     def get_configurable_parameters(cls) -> dict:
-        return {
+        default_params = super().get_configurable_parameters()
+        return default_params | {
             "n_observations": Parameter(
                 ParameterType.INT.name,
                 2720,
@@ -376,63 +437,3 @@ class DQN(Algorithm):
                 False,
             ),
         }
-
-    def config_model(self, config: dict) -> None:
-        super().config_model(config)
-
-        # Unmodifiable params
-        self.steps_done = 0
-        self.device = torch.device(
-            "cuda" if torch.cuda.is_available() and self.config.use_gpu else "cpu"
-        )
-
-        # Model setup
-        observations = (
-            self.config.n_observations
-            + self.config.n_actions * self.config.input_possible_moves
-        )
-        hidden_layers_list = map(int, self.config.hidden_layers.split(","))
-        layers = [observations]
-        layers.extend(hidden_layers_list)
-        layers.append(self.config.n_actions)
-
-        if self.config.seed:
-            random.seed(self.config.seed)
-            torch.manual_seed(self.config.seed)
-
-        self.memory = ReplayMemory(self.config.memory_size, self.config.batch_size)
-        self.policy_net = SimpleNet(layers, self.config.use_resnets).to(self.device)
-        self.target_net = SimpleNet(layers, self.config.use_resnets).to(self.device)
-        self.target_net.load_state_dict(self.policy_net.state_dict())
-
-        # Optimizer setup
-        self.optimizer = optim.AdamW(
-            self.policy_net.parameters(), lr=self.config.lr, amsgrad=True
-        )
-
-        # Things to store later in memory
-        self.state_m = None
-        self.action_m = None
-
-        self.target_net.eval()
-
-    def restart(self):
-        self.steps_done = 0
-        self.memory = ReplayMemory(self.config.memory_size, self.config.batch_size)
-        self.state_m = None
-        self.action_m = None
-
-    # Remove invalid moves by setting all invalid moves to 0
-    def _remove_invalid_moves(self, action_probs, actions):
-        for act in range(self.config.n_actions):
-            if act not in actions:
-                action_probs[act] = 0
-
-        return action_probs
-
-    def get_model(self):
-        return self.policy_net
-
-    def set_params(self, params):
-        self.policy_net.load_state_dict(params)
-        self.target_net.load_state_dict(params)

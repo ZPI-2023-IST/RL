@@ -83,14 +83,12 @@ class Runner:
         self,
         logger: Logger,
         algorithm_manager: AlgorithmManager,
-        max_game_len=100,
         config="config.json",
         stats_dir="stats",
     ) -> None:
         self.logger = logger
         self.algorithm_manager = algorithm_manager
         self.running = False
-        self.max_game_len = max_game_len
         self.start_time = 0
 
         self.run_process = threading.Thread(target=self.run)
@@ -136,7 +134,6 @@ class Runner:
         return time.time() - self.start_time if self.running else 0
 
     def run(self) -> None:
-        TIMEOUT_PENALTY = -2
         try:
             self.start_time = time.time()
             port = self.config["game_port"]
@@ -161,7 +158,7 @@ class Runner:
                     self.current_game.append(board_raw)
                     if (
                         game_status != GameStates.ONGOING.name
-                        or game_step >= self.max_game_len
+                        or game_step >= self.algorithm_manager.algorithm.config.timeout_steps
                         or len(actions) == 0
                     ):
                         state_info = (
@@ -179,12 +176,13 @@ class Runner:
                 self.data = None
                 game_step += 1
 
-                if len(actions) == 0 or game_step > self.max_game_len:
+                if len(actions) == 0 or game_step > self.algorithm_manager.algorithm.config.timeout_steps:
                     if game_status == GameStates.ONGOING.name:
                         self.algorithm_manager.algorithm.forward(
                             game_board, actions, reward
                         )
-                        self.game_results.store_game_results(TIMEOUT_PENALTY, game_status, True)
+                        penalty = -self.algorithm_manager.algorithm.config.timeout_penalty
+                        self.game_results.store_game_results(penalty, game_status, True)
                     else:
                         self.algorithm_manager.algorithm.forward(None, None, reward)
                         self.game_results.store_game_results(reward, game_status, True)
@@ -227,6 +225,7 @@ class Runner:
             LogType.TRAIN if mode == States.TRAIN.value else LogType.TEST,
         )
         self.running = True
+        self.algorithm_manager.algorithm.restart()
         self.game_results.reset()
         self.run_process.start()
 
