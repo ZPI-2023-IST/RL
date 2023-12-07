@@ -18,7 +18,8 @@ class RandomAlgorithm(Algorithm):
 
     @classmethod
     def get_configurable_parameters(cls) -> dict:
-        return {
+        default_params = super().get_configurable_parameters()
+        return default_params | {
             "seed": Parameter(
                 ParameterType.INT.name, None, 0, 1000, "Random seed", True
             )
