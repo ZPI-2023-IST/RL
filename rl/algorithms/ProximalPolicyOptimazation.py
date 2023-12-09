@@ -210,13 +210,21 @@ class ProximalPolicyOptimazation(Algorithm):
                 self.optimizer.step()
 
     def get_model(self) -> object:
-        pass
+        return self.agent
 
     def set_params(self, params) -> None:
-        pass
+        self.agent.load_state_dict(params)
 
     def restart(self) -> None:
-        pass
+        self.prev_state = None
+        self.prev_action = None
+        self.prev_log_prob = None
+        self.prev_value = None
+        self.prev_done = None
+        
+        self.global_step = 0
+        
+        self.buffer.clear()
 
     def config_model(self, config: dict) -> None:
         super().config_model(config)
