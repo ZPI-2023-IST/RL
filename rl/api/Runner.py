@@ -134,7 +134,7 @@ class Runner:
         return time.time() - self.start_time if self.running else 0
 
     def run(self) -> None:
-        if True:
+        try:
             self.start_time = time.time()
             port = self.config["game_port"]
             self.sio.connect(f"http://localhost:{port}", wait_timeout=10, namespaces=["/"])
@@ -158,8 +158,7 @@ class Runner:
                     self.current_game.append(board_raw)
                     if (
                         game_status != GameStates.ONGOING.name
-                        or game_step
-                        >= self.algorithm_manager.algorithm.config.timeout_steps
+                        or game_step >= self.algorithm_manager.algorithm.config.timeout_steps
                         or len(actions) == 0
                     ):
                         state_info = (
@@ -178,17 +177,12 @@ class Runner:
                 self.data = None
                 game_step += 1
 
-                if (
-                    len(actions) == 0
-                    or game_step > self.algorithm_manager.algorithm.config.timeout_steps
-                ):
+                if len(actions) == 0 or game_step > self.algorithm_manager.algorithm.config.timeout_steps:
                     if game_status == GameStates.ONGOING.name:
                         self.algorithm_manager.algorithm.forward(
                             game_board, actions, reward
                         )
-                        penalty = (
-                            -self.algorithm_manager.algorithm.config.timeout_penalty
-                        )
+                        penalty = -self.algorithm_manager.algorithm.config.timeout_penalty
                         self.game_results.store_game_results(penalty, game_status, True)
                     else:
                         self.algorithm_manager.algorithm.forward(None, None, reward)
@@ -207,19 +201,19 @@ class Runner:
                     self.sio.emit(
                         "make_move", json.dumps({"move": move}), namespace="/"
                     )
-        # except Exception as e:
-        #     self.logger.log(
-        #         f"Error while running {self.algorithm_manager.algorithm_name}: {e}",
-        #         LogLevel.ERROR,
-        #         LogType.TEST
-        #         if self.algorithm_manager.algorithm.config.mode == States.TEST.value
-        #         else LogType.TRAIN,
-        #     )
-        #     self.running = False
-        #     self.data = None
-        # finally:
-        #     self.sio.disconnect()
-        #     return
+        except Exception as e:
+            self.logger.log(
+                f"Error while running {self.algorithm_manager.algorithm_name}: {e}",
+                LogLevel.ERROR,
+                LogType.TEST
+                if self.algorithm_manager.algorithm.config.mode == States.TEST.value
+                else LogType.TRAIN,
+            )
+            self.running = False
+            self.data = None
+        finally:
+            self.sio.disconnect()
+            return
 
     def start(self) -> None:
         self.steps = 0
