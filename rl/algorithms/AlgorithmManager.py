@@ -2,7 +2,7 @@ from rl.logger.Logger import LogType
 
 
 class AlgorithmManager:
-    DEFAULT_ALGORITHM = "random"
+    DEFAULT_ALGORITHM = "ppo"
 
     def __init__(self) -> None:
         self.algorithm = None

@@ -134,7 +134,7 @@ class Runner:
         return time.time() - self.start_time if self.running else 0
 
     def run(self) -> None:
-        try:
+        if True:
             self.start_time = time.time()
             port = self.config["game_port"]
             self.sio.connect(f"http://localhost:{port}", wait_timeout=10, namespaces=["/"])
@@ -207,19 +207,19 @@ class Runner:
                     self.sio.emit(
                         "make_move", json.dumps({"move": move}), namespace="/"
                     )
-        except Exception as e:
-            self.logger.log(
-                f"Error while running {self.algorithm_manager.algorithm_name}: {e}",
-                LogLevel.ERROR,
-                LogType.TEST
-                if self.algorithm_manager.algorithm.config.mode == States.TEST.value
-                else LogType.TRAIN,
-            )
-            self.running = False
-            self.data = None
-        finally:
-            self.sio.disconnect()
-            return
+        # except Exception as e:
+        #     self.logger.log(
+        #         f"Error while running {self.algorithm_manager.algorithm_name}: {e}",
+        #         LogLevel.ERROR,
+        #         LogType.TEST
+        #         if self.algorithm_manager.algorithm.config.mode == States.TEST.value
+        #         else LogType.TRAIN,
+        #     )
+        #     self.running = False
+        #     self.data = None
+        # finally:
+        #     self.sio.disconnect()
+        #     return
 
     def start(self) -> None:
         self.steps = 0

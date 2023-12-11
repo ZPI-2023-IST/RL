@@ -25,7 +25,6 @@ Transition = namedtuple(
     ),
 )
 
-
 class PPOBuffer:
     def __init__(self, batch_size):
         self.memory = []
@@ -65,7 +64,7 @@ class ProximalPolicyOptimazation(Algorithm):
     def forward(self, state: list, actions: list, reward: float) -> int:
         self.global_step += 1
 
-        state = torch.tensor(state, dtype=torch.float32).to(self.device)
+        state = torch.tensor(state, dtype=torch.float32).to(self.device) if state is not None else None
         actions = (
             torch.tensor(actions, dtype=torch.long).to(self.device)
             if actions is not None
@@ -90,9 +89,14 @@ class ProximalPolicyOptimazation(Algorithm):
         reward: float,
     ) -> int:
         with torch.no_grad():
-            action, log_prob, _, value = self.agent.get_action_and_value(
-                state, allowed_actions=allowed_actions
-            )
+            if state is not None:
+                action, log_prob, _, value = self.agent.get_action_and_value(
+                    state, allowed_actions=allowed_actions
+                )
+            else:
+                action = None
+                log_prob = None
+                value = None
 
             done = True if allowed_actions is None else False
 
@@ -141,6 +145,7 @@ class ProximalPolicyOptimazation(Algorithm):
                 [x.value for x in self.buffer.memory]
             ).to(self.device)
 
+        self.agent.train()
         batch_inds = np.arange(len(self.buffer.memory))
         for _ in range(self.config.ppo_epochs):
             np.random.shuffle(batch_inds)
@@ -150,11 +155,9 @@ class ProximalPolicyOptimazation(Algorithm):
                 end = start + self.config.mini_batch_size
                 batch_inds_ = batch_inds[start:end]
 
-                batch_obs = torch.tensor(
-                    [self.buffer.memory[i].state for i in batch_inds_],
-                    dtype=torch.float32,
-                ).to(self.device)
-
+                batch_obs = [self.buffer.memory[i].state for i in batch_inds_]
+                batch_obs = torch.stack(batch_obs).to(self.device)
+          
                 batch_actions = torch.tensor(
                     [self.buffer.memory[i].action for i in batch_inds_],
                     dtype=torch.long,
@@ -185,22 +188,21 @@ class ProximalPolicyOptimazation(Algorithm):
                 log_ratio = new_log_probs - batch_log_probs
                 ratio = torch.exp(log_ratio)
 
-                with torch.no_grad():
-                    clip = (
-                        torch.clamp(ratio, 1 - self.clip, 1 + self.clip)
-                        * batch_advantages
-                    )
-                    batch_advantages = (batch_advantages - batch_advantages.mean()) / (
-                        batch_advantages.std() + 1e-8
-                    )
-                    loss_clip = -torch.min(clip, batch_advantages).mean()
-                    loss_vf = ((batch_returns - new_values) ** 2).mean()
-                    loss_entropy = -entropy.mean()
-                    loss = (
-                        loss_clip
-                        + self.config.c1 * loss_vf
-                        + self.config.c2 * loss_entropy
-                    )
+                clip = (
+                    torch.clamp(ratio, 1 - self.clip, 1 + self.clip)
+                    * batch_advantages
+                )
+                batch_advantages = (batch_advantages - batch_advantages.mean()) / (
+                    batch_advantages.std() + 1e-8
+                )
+                loss_clip = -torch.min(clip, batch_advantages).mean()
+                loss_vf = ((batch_returns - new_values) ** 2).mean()
+                loss_entropy = -entropy.mean()
+                loss = (
+                    loss_clip
+                    + self.config.c1 * loss_vf
+                    + self.config.c2 * loss_entropy
+                )
 
                 self.optimizer.zero_grad()
                 loss.backward()
@@ -238,6 +240,9 @@ class ProximalPolicyOptimazation(Algorithm):
         self.optimizer = optim.Adam(
             self.agent.parameters(), lr=self.config.lr, eps=1e-5
         )
+        
+        for param in self.agent.parameters():
+            param.requires_grad = True
 
         self.clip = self.config.clip
         self.buffer = PPOBuffer(self.config.update_frequency)
