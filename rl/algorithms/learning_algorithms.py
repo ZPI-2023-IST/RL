@@ -265,6 +265,14 @@ class DQN(Algorithm):
         self.memory = ReplayMemory(self.config.memory_size, self.config.batch_size)
         self.state_m = None
         self.action_m = None
+        
+        self.optimizer = optim.AdamW(
+            self.policy_net.parameters(), lr=self.config.lr, amsgrad=True
+        )
+        
+        self.device = torch.device(
+            "cuda" if torch.cuda.is_available() and self.config.use_gpu else "cpu"
+        )
 
     # Remove invalid moves by setting all invalid moves to 0
     def _remove_invalid_moves(self, action_probs, actions):

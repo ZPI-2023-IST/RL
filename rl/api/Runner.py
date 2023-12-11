@@ -170,6 +170,7 @@ class Runner:
                         game_info = {
                             "game": self.current_game,
                             "state": state_info,
+                            "timestamp": time.strftime("%Y/%m/%d-%H:%M:%S"),
                         }
                         self.game_history.append(game_info)
                         self.current_game = []

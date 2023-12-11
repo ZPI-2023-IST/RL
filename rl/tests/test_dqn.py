@@ -53,7 +53,7 @@ class TestDQN(unittest.TestCase):
         self.algorithm.config_model(config)
         # We need to have something to store in the memory
         self.algorithm._make_action(state, actions)
-        self.algorithm._store_memory(next_state, reward)
+        self.algorithm._store_memory(next_state, actions, reward)
 
         self.assertEqual(len(self.algorithm.memory), 1)
 
@@ -144,6 +144,7 @@ class TestDQN(unittest.TestCase):
         config["n_observations"] = 2
         config["hidden_layers"] = "16,16,16"
         config["n_actions"] = 2
+        config["mode"] = States.TRAIN.value
 
         # Because we cannot force model to choose illegal action
         # We test if on 100 seeds we will get the same output. It's highly unlikely that
