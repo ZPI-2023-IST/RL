@@ -1,4 +1,4 @@
 {
-    "game_address": "api",
+    "game_address": "http://api",
     "game_port": 5002
 }
