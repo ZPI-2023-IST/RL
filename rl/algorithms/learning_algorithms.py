@@ -288,6 +288,16 @@ class DQN(Algorithm):
         self.policy_net.load_state_dict(params)
         self.target_net.load_state_dict(params)
         
+    @staticmethod
+    def validate(data: dict) -> bool:
+        if "hidden_layers" not in data:
+            return True, ""
+        layers = data["hidden_layers"].split(",")
+        for layer in layers:
+            if not layer.isdigit():
+                return False, "Hidden layers must be a list of integers separated by comma"
+        return True, ""
+        
     @classmethod
     def get_configurable_parameters(cls) -> dict:
         default_params = super().get_configurable_parameters()

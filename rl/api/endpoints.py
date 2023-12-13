@@ -129,7 +129,14 @@ def config():
                 response = flask.jsonify({"error": f"Parameter {k} is not modifiable"})
                 response.status_code = 400
                 return response
-
+        
+        algorithm = algorithm_manager.algorithm.__class__
+        val, msg = algorithm.validate(data)
+        if not val:
+            response = flask.jsonify({"error": msg})
+            response.status_code = 400
+            return response
+    
         algorithm_manager.update_config(data)
         response_data = algorithm_manager.algorithm.config.as_dict()
         response = flask.jsonify(response_data)
@@ -149,6 +156,13 @@ def config():
             if "algorithm" in data.keys()
             else algorithm_manager.algorithm_name
         )
+        algorithm = algorithm_manager.registered_algorithms[algorithm_name]
+        val, msg = algorithm.validate(data)
+        if not val:
+            response = flask.jsonify({"error": msg})
+            response.status_code = 400
+            return response
+        
         algorithm_manager.set_algorithm(algorithm_name)
         algorithm_manager.configure_algorithm(data)
         response_data = algorithm_manager.algorithm.config.as_dict()
