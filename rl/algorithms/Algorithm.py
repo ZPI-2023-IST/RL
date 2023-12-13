@@ -60,3 +60,7 @@ class Algorithm(ABC):
 
     def update_config(self, config: dict) -> None:
         self.config.update(config)
+        
+    @staticmethod
+    def validate(data: dict) -> bool:
+        return True, ""
