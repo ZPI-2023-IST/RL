@@ -9,7 +9,7 @@ from flask import request
 import flask
 import torch
 
-from rl.api import logger, app, algorithm_manager, runner
+from rl.api import logger, app, algorithm_manager, runner, name_to_time
 from rl.logger.Logger import LogType
 
 
@@ -129,7 +129,14 @@ def config():
                 response = flask.jsonify({"error": f"Parameter {k} is not modifiable"})
                 response.status_code = 400
                 return response
-
+        
+        algorithm = algorithm_manager.algorithm.__class__
+        val, msg = algorithm.validate(data)
+        if not val:
+            response = flask.jsonify({"error": msg})
+            response.status_code = 400
+            return response
+    
         algorithm_manager.update_config(data)
         response_data = algorithm_manager.algorithm.config.as_dict()
         response = flask.jsonify(response_data)
@@ -149,6 +156,13 @@ def config():
             if "algorithm" in data.keys()
             else algorithm_manager.algorithm_name
         )
+        algorithm = algorithm_manager.registered_algorithms[algorithm_name]
+        val, msg = algorithm.validate(data)
+        if not val:
+            response = flask.jsonify({"error": msg})
+            response.status_code = 400
+            return response
+        
         algorithm_manager.set_algorithm(algorithm_name)
         algorithm_manager.configure_algorithm(data)
         response_data = algorithm_manager.algorithm.config.as_dict()
@@ -206,7 +220,11 @@ def get_game_history():
     """
     Endpoint returns game history.
     """
-    response = flask.jsonify({"history": runner.game_history})
+    MAX_HISTORY = 100
+    data = runner.game_history
+    if len(data) > MAX_HISTORY:
+        data = data[-MAX_HISTORY:]
+    response = flask.jsonify({"history": data})
     return response
 
 
@@ -215,11 +233,12 @@ def stats():
     """
     Endpoint returns statistics about training/testing process.
     """
-    MAX_STATS = 100
+    MAX_STATS = 25
     data = []
     for file in runner.stats_dir.iterdir():
         with open(file) as f:
             data.append(json.load(f))
+    data = sorted(data, key=lambda x: name_to_time(x["Name"]))
     if runner.running:
         current = runner.game_results.get_results()
         current["Name"] = "Current"
