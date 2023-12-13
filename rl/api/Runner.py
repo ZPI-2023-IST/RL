@@ -137,7 +137,7 @@ class Runner:
         try:
             self.start_time = time.time()
             port = self.config["game_port"]
-            self.sio.connect(f"http://api:{port}", wait_timeout=10, namespaces=["/"])
+            self.sio.connect(f"http://localhost:{port}", wait_timeout=10, namespaces=["/"])
             self.sio.emit("make_move", json.dumps({"move": None}), namespace="/")
 
             move = None
@@ -153,6 +153,8 @@ class Runner:
                 game_board = self.data["game_board"]
                 game_status = self.data["state"]
                 board_raw = self.data["board_raw"]
+                
+                self.data = None
 
                 if self.algorithm_manager.algorithm.config.mode == States.TEST.value:
                     self.current_game.append(board_raw)
@@ -173,20 +175,22 @@ class Runner:
                         }
                         self.game_history.append(game_info)
                         self.current_game = []
-
-                self.data = None
+                    
                 game_step += 1
-
-                if len(actions) == 0 or game_step > self.algorithm_manager.algorithm.config.timeout_steps:
-                    if game_status == GameStates.ONGOING.name:
-                        self.algorithm_manager.algorithm.forward(
-                            game_board, actions, reward
-                        )
-                        penalty = -self.algorithm_manager.algorithm.config.timeout_penalty
-                        self.game_results.store_game_results(penalty, game_status, True)
-                    else:
-                        self.algorithm_manager.algorithm.forward(None, None, reward)
-                        self.game_results.store_game_results(reward, game_status, True)
+                if game_step > self.algorithm_manager.algorithm.config.timeout_steps and game_status == GameStates.ONGOING.name:
+                    penalty = -self.algorithm_manager.algorithm.config.timeout_penalty
+                    self.algorithm_manager.algorithm.forward(
+                        game_board, actions, penalty
+                    )
+                    self.game_results.store_game_results(penalty, game_status, True)
+                    
+                    self.sio.emit(
+                        "make_move", json.dumps({"move": None}), namespace="/"
+                    )
+                    game_step = 0
+                elif game_status != GameStates.ONGOING.name or len(actions) == 0:
+                    self.algorithm_manager.algorithm.forward(None, None, reward)
+                    self.game_results.store_game_results(reward, game_status, True)
 
                     self.sio.emit(
                         "make_move", json.dumps({"move": None}), namespace="/"
@@ -201,6 +205,7 @@ class Runner:
                     self.sio.emit(
                         "make_move", json.dumps({"move": move}), namespace="/"
                     )
+
         except Exception as e:
             self.logger.log(
                 f"Error while running {self.algorithm_manager.algorithm_name}: {e}",
