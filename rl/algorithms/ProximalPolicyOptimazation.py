@@ -126,10 +126,10 @@ class ProximalPolicyOptimazation(Algorithm):
             lastgaelam = 0
             for t in reversed(range(len(self.buffer.memory))):
                 if t == len(self.buffer.memory) - 1:
-                    next_values = self.prev_value
+                    next_values = self.prev_value or 0.0
                     next_done = self.prev_done
                 else:
-                    next_values = self.buffer.memory[t + 1].value
+                    next_values = self.buffer.memory[t + 1].value or 0.0
                     next_done = self.buffer.memory[t + 1].next_done
                 delta = (
                     self.buffer.memory[t].reward
@@ -174,11 +174,6 @@ class ProximalPolicyOptimazation(Algorithm):
 
                 batch_advantages = torch.tensor(
                     [advantages[i] for i in batch_inds_],
-                    dtype=torch.float32,
-                ).to(self.device)
-
-                batch_values = torch.tensor(
-                    [self.buffer.memory[i].value for i in batch_inds_],
                     dtype=torch.float32,
                 ).to(self.device)
 
