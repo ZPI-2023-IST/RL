@@ -64,7 +64,7 @@ class ProximalPolicyOptimazation(Algorithm):
     def forward(self, state: list, actions: list, reward: float) -> int:
         self.global_step += 1
 
-        state = torch.tensor(state, dtype=torch.float32).to(self.device) if state is not None else None
+        state = torch.tensor(state, dtype=torch.float32).flatten().to(self.device) if state is not None else None
         actions = (
             torch.tensor(actions, dtype=torch.long).to(self.device)
             if actions is not None
