@@ -27,7 +27,7 @@ class Algorithm(ABC):
     @abstractmethod
     def set_params(self, params) -> None:
         pass
-    
+
     @classmethod
     def get_configurable_parameters(cls) -> dict:
         return {
