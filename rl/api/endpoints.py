@@ -93,7 +93,8 @@ def model():
             algorithm_manager.configure_algorithm(config)
 
         if os.path.isfile(data_dir / params_name):
-            params = torch.load(data_dir / params_name)
+            device = torch.device("cuda" if torch.cuda.is_available() and config["use_gpu"] else "cpu")
+            params = torch.load(data_dir / params_name, map_location=device)
             algorithm_manager.algorithm.set_params(params)
 
         logger.info(
