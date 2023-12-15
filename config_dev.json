@@ -1,6 +1,0 @@
-{
-    "game": {
-        "port": 5002,
-        "host": "http://localhost"
-    }
-}
