@@ -6,7 +6,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from rl.algorithms import Algorithm
 from rl.algorithms import Algorithm, algorithm_manager, Parameter
 from rl.algorithms import ParameterType
 
@@ -15,26 +14,65 @@ from rl.algorithms import ParameterType
 class DDQN(Algorithm):
     def __init__(self, logger) -> None:
         super().__init__(logger)
+        self.agent = None
 
     def forward(self, state: list, actions: list, reward: float) -> int:
         pass
 
     def get_model(self) -> object:
-        pass
+        return self.agent.Q_eval
 
     def set_params(self, params) -> None:
         pass
 
     def config_model(self, config: dict) -> None:
         super().config_model(config)
+        load_checkpoint = False
+        hidden_sizes = [int(x) for x in self.config.input_dims.split(",")]
+        self.agent = Agent(gamma=self.config.gamma, epsilon=self.config.epsilon, lr=self.config.lr,
+                           input_dims=hidden_sizes, batch_size=self.config.batch_size,
+                           n_actions=self.config.n_actions, max_mem_size=self.config.max_mem_size,
+                           eps_min=self.config.eps_min, eps_dec=self.config.eps_dec, replace=self.config.replace,
+                           chkpt_dir="tmp/dqn")
+
+        if load_checkpoint:
+            self.agent.load_models()
 
     @classmethod
     def get_configurable_parameters(cls) -> dict:
         default_params = super().get_configurable_parameters()
         return default_params | {
-            "seed": Parameter(
-                ParameterType.INT.name, None, 0, 1000, "Random seed", True
-            )
+            "lr": Parameter(
+                ParameterType.FLOAT.name, 0.001, None, None, "Learning rate", True
+            ),
+            "gamma": Parameter(
+                ParameterType.FLOAT.name, 0.1, None, None, "Gamma", True
+            ),
+            "epsilon": Parameter(
+                ParameterType.FLOAT.name, 0.001, None, None, "Epsilon", True
+            ),
+            "batch_size": Parameter(
+                ParameterType.INT.name, 124, None, None, "Batch size", True
+            ),
+            "replace": Parameter(
+                ParameterType.INT.name, 1000, None, None, "Replace", True
+            ),
+            "eps_min": Parameter(
+                ParameterType.FLOAT.name, 0.000001, None, None, "Epsilon Min", True
+            ),
+            "eps_dec": Parameter(
+                ParameterType.FLOAT.name, 0.1, None, None, "Epsilon Dec", True
+            ),
+            "max_mem_size": Parameter(
+                ParameterType.INT.name, 1000, None, None, "Max Memory Size", True
+            ),
+            "n_actions": Parameter(
+                ParameterType.INT.name, 4, None, None, "How many actions can model choose from", True
+            ),
+            "input_dims": Parameter(
+                ParameterType.STRING.name, "256,256", None, None, "How long is board vector", True
+            ),
+
         }
 
 
@@ -50,7 +88,7 @@ class ReplayBuffer:
         )
         self.action_memory = np.zeros(self.mem_size, dtype=np.int64)
         self.reward_memory = np.zeros(self.mem_size, dtype=np.float32)
-        self.terminal_memory = np.zeros(self.mem_size, dtype=np.bool)
+        self.terminal_memory = np.zeros(self.mem_size, dtype=bool)
 
     def store_transition(self, state, action, reward, state_, done):
         index = self.mem_cntr % self.mem_size
@@ -86,7 +124,7 @@ class DuelingDeepQLearning(nn.Module):
         self.chkpt_dir = chkpt_dir
         self.chkpt_file = os.path.join(self.chkpt_dir, "ddqn")
 
-        self.fc1 = nn.Linear(*self.input_dims, 512)
+        self.fc1 = nn.Linear(self.input_dims[0], 512)
         self.V = nn.Linear(512, 1)
         self.A = nn.Linear(512, self.n_actions)
 
@@ -129,18 +167,18 @@ class Agent:
 
         self.memory = ReplayBuffer(max_mem_size, input_dims)
 
-        self.Q_eval = DuelingDeepQLearning(self.lr, self.n_actions,
+        self.Q_eval = DuelingDeepQLearning(n_actions=self.n_actions,
                                            input_dims=input_dims, lr=self.lr,
                                            chkpt_dir=self.chkpt_dir)
 
-        self.Q_eval_next = DuelingDeepQLearning(self.lr, self.n_actions,
+        self.Q_eval_next = DuelingDeepQLearning(n_actions=self.n_actions,
                                                 input_dims=input_dims, lr=self.lr,
                                                 chkpt_dir=self.chkpt_dir)
 
-        self.state_memory = np.zeros((self.max_mem_size, *input_dims),
+        self.state_memory = np.zeros((max_mem_size, input_dims),
                                      dtype=np.float32)
 
-        self.new_state_memory = np.zeros((self.max_mem_size, *input_dims),
+        self.new_state_memory = np.zeros((self.max_mem_size, input_dims),
                                          dtype=np.float32)
         self.action_memory = np.zeros(self.max_mem_size, dtype=np.int64)
         self.reward_memory = np.zeros(self.max_mem_size, dtype=np.float32)
