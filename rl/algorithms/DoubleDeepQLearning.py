@@ -1,39 +1,58 @@
-import os
-
 import numpy as np
+import torch
 import torch as T
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 
 from rl.algorithms import Algorithm, algorithm_manager, Parameter
 from rl.algorithms import ParameterType
 
 
+# TODO: Add to documentation
+# State None means that game has ended
+
 @algorithm_manager.register_algorithm("ddqn")
 class DDQN(Algorithm):
     def __init__(self, logger) -> None:
         super().__init__(logger)
+        self.device = None
         self.agent = None
 
+        self.prev_state = None
+        self.prev_action = None
+
     def forward(self, state: list, actions: list, reward: float) -> int:
-        pass
+
+        state = torch.tensor(state, dtype=torch.float32).flatten().to(self.device) if state is not None else None
+
+        allowed_actions = torch.tensor(actions, dtype=torch.int64).to(self.device) if actions is not None else None
+
+        self.agent.store_transition(self.prev_state, -1 if self.prev_action is None else self.prev_action, reward, state, state is None)
+        self.prev_state = state
+
+        if state is None:
+            self.prev_action = None
+        else:
+            self.prev_action = int(self.agent.choose_action(state, allowed_actions))
+
+        return self.prev_action
 
     def get_model(self) -> object:
-        return self.agent.Q_eval
+        return self.agent.Q_eval.state_dict()
 
     def set_params(self, params) -> None:
-        pass
+        self.agent.Q_eval.load_state_dict(params)
+        self.agent.Q_eval_next.load_state_dict(params)
 
     def config_model(self, config: dict) -> None:
         super().config_model(config)
         load_checkpoint = False
-        hidden_sizes = [int(x) for x in self.config.input_dims.split(",")]
+        hidden_sizes = [int(x) for x in self.config.hidden_sizes.split(",")]
+        self.device = T.device("cuda:0" if T.cuda.is_available() else "cpu")
         self.agent = Agent(gamma=self.config.gamma, epsilon=self.config.epsilon, lr=self.config.lr,
-                           input_dims=hidden_sizes, batch_size=self.config.batch_size,
-                           n_actions=self.config.n_actions, max_mem_size=self.config.max_mem_size,
-                           eps_min=self.config.eps_min, eps_dec=self.config.eps_dec, replace=self.config.replace,
-                           chkpt_dir="tmp/dqn")
+                           input_dims=self.config.input_dims, batch_size=self.config.batch_size,
+                           n_actions=self.config.n_actions, max_mem_size=self.config.max_mem_size, hidden_sizes=hidden_sizes,
+                           eps_min=self.config.eps_min, eps_dec=self.config.eps_dec, replace=self.config.replace)
 
         if load_checkpoint:
             self.agent.load_models()
@@ -70,21 +89,24 @@ class DDQN(Algorithm):
                 ParameterType.INT.name, 4, None, None, "How many actions can model choose from", True
             ),
             "input_dims": Parameter(
-                ParameterType.STRING.name, "256,256", None, None, "How long is board vector", True
+                ParameterType.INT.name, 176, None, None, "How long is board vector", True
             ),
+            "hidden_sizes": Parameter(
+                ParameterType.STRING.name, "64,64", None, None, "How long is board vector", True
+            )
 
         }
 
 
 class ReplayBuffer:
-    def __init__(self, max_size, input_shape):
+    def __init__(self, max_size, input_dims):
         self.mem_size = max_size
         self.mem_cntr = 0
         self.state_memory = np.zeros(
-            (self.mem_size, *input_shape), dtype=np.float32
+            (self.mem_size, input_dims), dtype=np.float32
         )
         self.new_state_memory = np.zeros(
-            (self.mem_size, *input_shape), dtype=np.float32
+            (self.mem_size, input_dims), dtype=np.float32
         )
         self.action_memory = np.zeros(self.mem_size, dtype=np.int64)
         self.reward_memory = np.zeros(self.mem_size, dtype=np.float32)
@@ -113,7 +135,7 @@ class ReplayBuffer:
 
 class DuelingDeepQLearning(nn.Module):
 
-    def __init__(self, lr, n_actions, input_dims, chkpt_dir) -> None:
+    def __init__(self, lr, n_actions, input_dims, hidden_sizes=(64, 64)) -> None:
         super(DuelingDeepQLearning, self).__init__()
 
         # params
@@ -121,12 +143,17 @@ class DuelingDeepQLearning(nn.Module):
         self.lr = lr
         self.n_actions = n_actions
 
-        self.chkpt_dir = chkpt_dir
-        self.chkpt_file = os.path.join(self.chkpt_dir, "ddqn")
+        hidden_layers = [nn.Linear(input_dims, hidden_sizes[0]), nn.ReLU()]
 
-        self.fc1 = nn.Linear(self.input_dims[0], 512)
-        self.V = nn.Linear(512, 1)
-        self.A = nn.Linear(512, self.n_actions)
+        for i in range(len(hidden_sizes) - 1):
+            hidden_layers.append(
+                nn.Linear(hidden_sizes[i], hidden_sizes[i + 1])
+            )
+            hidden_layers.append(nn.ReLU())
+
+        self.fc1 = nn.Sequential(*nn.ModuleList(hidden_layers))
+        self.V = nn.Linear(hidden_sizes[-1], 1)
+        self.A = nn.Linear(hidden_sizes[-1], self.n_actions)
 
         self.optimizer = optim.Adam(self.parameters(), lr=self.lr)
         self.loss = nn.MSELoss()
@@ -134,26 +161,18 @@ class DuelingDeepQLearning(nn.Module):
         self.to(self.device)
 
     def forward(self, state) -> int:
-        flat1 = F.relu(self.fc1(state))
+        flat1 = self.fc1(state)
         V = self.V(flat1)
         A = self.A(flat1)
 
         return V, A
 
-    def save_checkpoint(self):
-        print("... saving checkpoint ...")
-        T.save(self.state_dict(), self.chkpt_file)
-
-    def load_checkpoint(self):
-        print("... loading checkpoint ...")
-        self.load_state_dict(T.load(self.chkpt_file))
-
 
 class Agent:
     def __init__(self, gamma, epsilon, lr, input_dims, batch_size, n_actions,
-                 max_mem_size=10000, eps_min=0.01, eps_dec=5e-7, replace=1000, chkpt_dir="tmp/dqn"):
+                 max_mem_size=10000, eps_min=0.01, eps_dec=5e-7, replace=1000, hidden_sizes=(64, 64)):
+
         self.replace = replace
-        self.chkpt_dir = chkpt_dir
         self.gamma = gamma
         self.epsilon = epsilon
         self.lr = lr
@@ -161,37 +180,37 @@ class Agent:
         self.n_actions = n_actions
         self.eps_min = eps_min
         self.eps_dec = eps_dec
-        self.action_space = [i for i in range(self.n_actions)]
         self.mem_cntr = 0
         self.learn_step_counter = 0
 
         self.memory = ReplayBuffer(max_mem_size, input_dims)
 
-        self.Q_eval = DuelingDeepQLearning(n_actions=self.n_actions,
-                                           input_dims=input_dims, lr=self.lr,
-                                           chkpt_dir=self.chkpt_dir)
+        self.Q_eval = DuelingDeepQLearning(n_actions=self.n_actions, hidden_sizes=hidden_sizes,
+                                           input_dims=input_dims, lr=self.lr)
 
-        self.Q_eval_next = DuelingDeepQLearning(n_actions=self.n_actions,
-                                                input_dims=input_dims, lr=self.lr,
-                                                chkpt_dir=self.chkpt_dir)
+        self.Q_eval_next = DuelingDeepQLearning(n_actions=self.n_actions, hidden_sizes=hidden_sizes,
+                                                input_dims=input_dims, lr=self.lr)
 
         self.state_memory = np.zeros((max_mem_size, input_dims),
                                      dtype=np.float32)
 
-        self.new_state_memory = np.zeros((self.max_mem_size, input_dims),
+        self.new_state_memory = np.zeros((max_mem_size, input_dims),
                                          dtype=np.float32)
-        self.action_memory = np.zeros(self.max_mem_size, dtype=np.int64)
-        self.reward_memory = np.zeros(self.max_mem_size, dtype=np.float32)
-        self.terminal_memory = np.zeros(self.max_mem_size, dtype=np.bool)
+        self.action_memory = np.zeros(max_mem_size, dtype=np.int64)
+        self.reward_memory = np.zeros(max_mem_size, dtype=np.float32)
+        self.terminal_memory = np.zeros(max_mem_size, dtype=bool)
 
-    def choose_action(self, observation):
+    def choose_action(self, observation, allowed_actions):
         if np.random.random() > self.epsilon:
-            state = T.tensor([observation], dtype=T.float32).to(
-                self.Q_eval.device)
+            state = T.tensor(observation, dtype=T.float).to(self.Q_eval.device)
             _, advantage = self.Q_eval.forward(state)
+            allowed_mask = torch.zeros_like(advantage)
+            allowed_mask[allowed_actions] = 1
+            advantage = torch.where(allowed_mask.bool(), advantage, torch.tensor(-1e+8))
+
             action = T.argmax(advantage).item()
         else:
-            action = np.random.choice(self.action_space)
+            action = np.random.choice(allowed_actions)
 
         return action
 
@@ -205,14 +224,6 @@ class Agent:
     def decrement_epsilon(self):
         self.epsilon = self.epsilon - self.eps_dec \
             if self.epsilon > self.eps_min else self.eps_min
-
-    def save_models(self):
-        self.Q_eval.save_checkpoint()
-        self.Q_eval_next.save_checkpoint()
-
-    def load_models(self):
-        self.Q_eval.load_checkpoint()
-        self.Q_eval_next.load_checkpoint()
 
     def learn(self):
         if self.memory.mem_cntr < self.batch_size:
