@@ -10,6 +10,7 @@ from torch.nn.functional import softmax
 from rl.algorithms import Algorithm, algorithm_manager, ParameterType, States, Parameter
 from rl.algorithms.modules.SimpleNet import SimpleNet
 from rl.algorithms.ProximalPolicyOptimazation import ProximalPolicyOptimazation
+from rl.algorithms.DoubleDeepQLearning import DuelingDeepQLearning
 
 """
 Implementation based on Pytorch tutorial

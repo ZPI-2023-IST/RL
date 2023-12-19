@@ -7,6 +7,35 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from rl.algorithms import Algorithm
+from rl.algorithms import Algorithm, algorithm_manager, Parameter
+from rl.algorithms import ParameterType
+
+
+@algorithm_manager.register_algorithm("ddqn")
+class DDQN(Algorithm):
+    def __init__(self, logger) -> None:
+        super().__init__(logger)
+
+    def forward(self, state: list, actions: list, reward: float) -> int:
+        pass
+
+    def get_model(self) -> object:
+        pass
+
+    def set_params(self, params) -> None:
+        pass
+
+    def config_model(self, config: dict) -> None:
+        super().config_model(config)
+
+    @classmethod
+    def get_configurable_parameters(cls) -> dict:
+        default_params = super().get_configurable_parameters()
+        return default_params | {
+            "seed": Parameter(
+                ParameterType.INT.name, None, 0, 1000, "Random seed", True
+            )
+        }
 
 
 class ReplayBuffer:
@@ -44,30 +73,29 @@ class ReplayBuffer:
         return states, actions, rewards, states_, terminal
 
 
-@algorithm_manager.register_algorithm("ddqn")
-class DuelingDeepQLearning(Algorithm, nn.Module):
+class DuelingDeepQLearning(nn.Module):
 
-    def __init__(self, logger, lr, n_actions, input_dims, chkpt_dir) -> None:
-        super().__init__(logger)
+    def __init__(self, lr, n_actions, input_dims, chkpt_dir) -> None:
+        super(DuelingDeepQLearning, self).__init__()
 
         # params
         self.input_dims = input_dims
-        self.lr = 0.001
-        self.n_actions = 4
+        self.lr = lr
+        self.n_actions = n_actions
 
         self.chkpt_dir = chkpt_dir
         self.chkpt_file = os.path.join(self.chkpt_dir, "ddqn")
 
-        self.fc1 = nn.Linear(*input_dims, 512)
+        self.fc1 = nn.Linear(*self.input_dims, 512)
         self.V = nn.Linear(512, 1)
-        self.A = nn.Linear(512, n_actions)
+        self.A = nn.Linear(512, self.n_actions)
 
-        self.optimizer = optim.Adam(self.parameters(), lr=lr)
+        self.optimizer = optim.Adam(self.parameters(), lr=self.lr)
         self.loss = nn.MSELoss()
         self.device = T.device("cuda:0" if T.cuda.is_available() else "cpu")
         self.to(self.device)
 
-    def forward(self, state: list, actions: list, reward: float) -> int:
+    def forward(self, state) -> int:
         flat1 = F.relu(self.fc1(state))
         V = self.V(flat1)
         A = self.A(flat1)
@@ -81,23 +109,6 @@ class DuelingDeepQLearning(Algorithm, nn.Module):
     def load_checkpoint(self):
         print("... loading checkpoint ...")
         self.load_state_dict(T.load(self.chkpt_file))
-
-    def config_model(self, config: dict) -> None:
-        super().config_model(config)
-
-    def get_model(self) -> object:
-        pass
-
-    def set_params(self, params) -> None:
-        pass
-
-    @classmethod
-    def get_configurable_parameters(cls) -> dict:
-        return default_params | {
-            "seed": Parameter(
-                ParameterType.INT.name, None, 0, 1000, "Random seed", True
-            )
-        }
 
 
 class Agent:
@@ -120,13 +131,11 @@ class Agent:
 
         self.Q_eval = DuelingDeepQLearning(self.lr, self.n_actions,
                                            input_dims=input_dims, lr=self.lr,
-                                           chkpt_dir=self.chkpt_dir,
-                                           fc1_dims=512, fc2_dims=512)
+                                           chkpt_dir=self.chkpt_dir)
 
         self.Q_eval_next = DuelingDeepQLearning(self.lr, self.n_actions,
                                                 input_dims=input_dims, lr=self.lr,
-                                                chkpt_dir=self.chkpt_dir,
-                                                fc1_dims=512, fc2_dims=512)
+                                                chkpt_dir=self.chkpt_dir)
 
         self.state_memory = np.zeros((self.max_mem_size, *input_dims),
                                      dtype=np.float32)
@@ -141,7 +150,7 @@ class Agent:
         if np.random.random() > self.epsilon:
             state = T.tensor([observation], dtype=T.float32).to(
                 self.Q_eval.device)
-            _, advantage = self.Q_eval.forward(state, None, None)
+            _, advantage = self.Q_eval.forward(state)
             action = T.argmax(advantage).item()
         else:
             action = np.random.choice(self.action_space)
@@ -186,10 +195,10 @@ class Agent:
 
         indices = np.arange(self.batch_size)
 
-        V_s, A_s = self.Q_eval.forward(states, None, None)
-        V_s_, A_s_ = self.Q_eval_next.forward(states_, None, None)
+        V_s, A_s = self.Q_eval.forward(states)
+        V_s_, A_s_ = self.Q_eval_next.forward(states_)
 
-        V_s_eval, A_s_eval = self.Q_eval.forward(states_, None, None)
+        V_s_eval, A_s_eval = self.Q_eval.forward(states_)
 
         q_pred = T.add(V_s,
                        (A_s - A_s.mean(dim=1, keepdim=True)))[indices, actions]
