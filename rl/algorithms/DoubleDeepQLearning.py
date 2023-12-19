@@ -65,25 +65,25 @@ class DDQN(Algorithm):
                 ParameterType.FLOAT.name, 0.001, None, None, "Learning rate", True
             ),
             "gamma": Parameter(
-                ParameterType.FLOAT.name, 0.1, None, None, "Gamma", True
+                ParameterType.FLOAT.name, 0.99, None, None, "Gamma", True
             ),
             "epsilon": Parameter(
-                ParameterType.FLOAT.name, 0.001, None, None, "Epsilon", True
+                ParameterType.FLOAT.name, 0.9, None, None, "Epsilon", True
             ),
             "batch_size": Parameter(
-                ParameterType.INT.name, 124, None, None, "Batch size", True
+                ParameterType.INT.name, 128, None, None, "Batch size", True
             ),
             "replace": Parameter(
-                ParameterType.INT.name, 1000, None, None, "Replace", True
+                ParameterType.INT.name, 5000, None, None, "Replace", True
             ),
             "eps_min": Parameter(
-                ParameterType.FLOAT.name, 0.000001, None, None, "Epsilon Min", True
+                ParameterType.FLOAT.name, 0.01, None, None, "Epsilon Min", True
             ),
             "eps_dec": Parameter(
-                ParameterType.FLOAT.name, 0.1, None, None, "Epsilon Dec", True
+                ParameterType.FLOAT.name, 5e-7, None, None, "Epsilon Dec", True
             ),
             "max_mem_size": Parameter(
-                ParameterType.INT.name, 1000, None, None, "Max Memory Size", True
+                ParameterType.INT.name, 100_000, None, None, "Max Memory Size", True
             ),
             "n_actions": Parameter(
                 ParameterType.INT.name, 4, None, None, "How many actions can model choose from", True
@@ -92,7 +92,7 @@ class DDQN(Algorithm):
                 ParameterType.INT.name, 176, None, None, "How long is board vector", True
             ),
             "hidden_sizes": Parameter(
-                ParameterType.STRING.name, "64,64", None, None, "How long is board vector", True
+                ParameterType.STRING.name, "512,512", None, None, "How long is board vector", True
             )
 
         }
